@@ -1,83 +1,75 @@
-# CST Silver Flight: Choose Your Journey
+# CST Silver Flight: Learn • Play • Compete
 
-A browser-based Flappy Bird arcade game celebrating the **25th Silver Jubilee** of the College of Science and Technology (CST).
+Interactive learning + competition platform for CST's **25th Silver Jubilee**.
 
-Built with **Phaser 3**, **Firebase Firestore**, and deployable on **Vercel**.
+## Feature checklist
+
+| Feature | Status |
+|---------|--------|
+| 3 game modes (Classic, Journey, Department) | ✅ |
+| Student / Lecturer roles | ✅ |
+| Avatar (camera, upload, default styles) | ✅ |
+| Quiz every 15 obstacles | ✅ |
+| Quiz difficulty scaling + streak bonus | ✅ |
+| CST Legacy Moments (scores 25/50/75/100) | ✅ |
+| Hall of Fame screen | ✅ |
+| Achievements (local badges) | ✅ |
+| Surprise rewards | ✅ |
+| Campus PNG backgrounds + video home | ✅ |
+| Firebase leaderboards (role-aware) | ✅ |
+| Message to CST (game over) | ✅ |
+| Cinematic intro scene | ✅ |
+| Audio (MP3 files or beep fallback) | ✅ |
 
 ---
 
-## Features
-
-- **3 Game Modes**: Flappy CST (Classic), 25 Years Journey (Story), Hackathon Escape (Challenge)
-- **Player System**: Login-free name/department/year collection with localStorage
-- **Power-Ups**: Coffee (slow-mo), Shield, Double Score, WiFi Boost
-- **Leaderboard**: Firebase Firestore top-10 global scores
-- **Responsive**: Works on mobile and desktop
-- **Silver Jubilee Theme**: Modern silver + blue UI
-
----
-
-## Quick Start (Local)
+## Quick Start
 
 ```bash
-# Navigate to the game folder
 cd game
-
-# Serve with any static server (ES modules require HTTP)
 npx serve .
-# OR
-python -m http.server 8080
 ```
 
-Open `http://localhost:3000` (serve) or `http://localhost:8080` (python).
+Flow: **Intro → Menu → Player Info → Mode Select → Play**
 
 ---
 
-## Project Structure
+## Add Your Assets
 
-```
-game/
-├── index.html          # Entry point
-├── main.js             # Phaser game config
-├── styles.css          # Global styles
-├── firebase.js         # Firestore leaderboard
-├── config/
-│   └── constants.js    # Shared constants
-├── utils/
-│   ├── storage.js      # localStorage helpers
-│   └── UIHelper.js     # UI component helpers
-├── scenes/
-│   ├── BootScene.js    # Asset generation + boot
-│   ├── MenuScene.js    # Start screen
-│   ├── PlayerInfoScene.js
-│   ├── ModeScene.js    # Mode selection
-│   ├── GameScene.js    # Core gameplay
-│   ├── UIScene.js      # HUD overlay
-│   └── GameOverScene.js
-└── assets/             # Placeholder for custom assets
-```
+See [game/assets/ASSETS.md](game/assets/ASSETS.md)
+
+| Asset | Path |
+|-------|------|
+| Logo | `assets/images/cst-logo.png` |
+| Campus 1–5 | `assets/images/campus1.png` … `campus5.png` |
+| Video | `assets/video/campus-bg.mp4` |
+| Audio (optional) | `assets/audio/jump.mp3`, `hit.mp3`, `bgm.mp3`, etc. |
+
+---
+
+## Scenes
+
+- `BootScene` — preload textures
+- `IntroScene` — cinematic start
+- `MenuScene` — video background home
+- `PlayerInfoScene` — player + avatar
+- `ModeScene` — mode selection (ModeSelectionScene)
+- `GameScene` — gameplay
+- `QuizScene` — quiz overlay
+- `LegacyScene` — CST timeline slides
+- `UIScene` — HUD
+- `LeaderboardScene` — top 10 scores
+- `HallOfFameScene` — champions + badges
+- `GameOverScene` — score + message
 
 ---
 
 ## Firebase Setup
 
-1. Go to [Firebase Console](https://console.firebase.google.com) and create a project.
-2. Enable **Firestore Database** (start in test mode for development).
-3. Copy your web app config from Project Settings → General → Your apps.
-4. Paste credentials into `game/firebase.js`:
-
-```js
-const firebaseConfig = {
-  apiKey: 'YOUR_API_KEY',
-  authDomain: 'YOUR_PROJECT.firebaseapp.com',
-  projectId: 'YOUR_PROJECT_ID',
-  storageBucket: 'YOUR_PROJECT.appspot.com',
-  messagingSenderId: 'YOUR_SENDER_ID',
-  appId: 'YOUR_APP_ID',
-};
-```
-
-5. Set Firestore security rules:
+1. Create project at [Firebase Console](https://console.firebase.google.com)
+2. Enable Firestore
+3. Paste config into `game/firebase.js`
+4. Rules:
 
 ```
 rules_version = '2';
@@ -97,59 +89,12 @@ service cloud.firestore {
 
 ## Deploy to Vercel
 
-### Option A: Vercel CLI
-
 ```bash
-npm i -g vercel
-vercel
-```
-
-The included `vercel.json` routes traffic to the `game/` folder.
-
-### Option B: GitHub Integration
-
-1. Push this repo to GitHub.
-2. Import the project at [vercel.com/new](https://vercel.com/new).
-3. Vercel auto-detects the `vercel.json` configuration.
-4. Deploy — your game will be live at `your-project.vercel.app`.
-
-### Option C: Deploy game folder only
-
-```bash
-cd game
 npx vercel
 ```
 
 ---
 
-## Controls
+## GitHub
 
-| Action | Desktop | Mobile |
-|--------|---------|--------|
-| Jump   | Space / Click | Tap |
-| Navigate menus | Click | Tap |
-
----
-
-## Game Modes
-
-| Mode | Description | Difficulty |
-|------|-------------|------------|
-| Flappy CST | Classic books/exams obstacles | Normal |
-| 25 Years Journey | Background evolves with score milestones | Normal |
-| Hackathon Escape | Fast bugs/errors/deadlines | Hard |
-
----
-
-## Customization
-
-- **Logo**: Replace the procedural logo in `BootScene.js` or add a PNG to `assets/images/` and load it in BootScene.
-- **Sounds**: Add audio files to `assets/audio/` and load/play them in scenes.
-- **Colors**: Edit `config/constants.js` → `COLORS` and `JOURNEY_MILESTONES`.
-- **Difficulty**: Tune `MODE_CONFIG` values in `config/constants.js`.
-
----
-
-## License
-
-Built for CST Silver Jubilee celebration. All rights reserved.
+https://github.com/shoc05/cst-silver-flight

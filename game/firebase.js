@@ -1,23 +1,9 @@
 /**
  * Firebase Firestore leaderboard integration.
  *
- * SETUP:
- * 1. Create a Firebase project at https://console.firebase.google.com
- * 2. Enable Firestore Database
- * 3. Replace the firebaseConfig object below with your project credentials
- * 4. Set Firestore rules (development example):
- *
- *    rules_version = '2';
- *    service cloud.firestore {
- *      match /databases/{database}/documents {
- *        match /leaderboard/{doc} {
- *          allow read: if true;
- *          allow create: if request.resource.data.score is int
- *                        && request.resource.data.score >= 0
- *                        && request.resource.data.score <= 99999;
- *        }
- *      }
- *    }
+ * Leaderboard types:
+ * - Classic / Journey → global (all players)
+ * - Department Challenge → per-department for students, separate for lecturers
  */
 
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
@@ -26,13 +12,14 @@ import {
   collection,
   addDoc,
   query,
+  where,
   orderBy,
   limit,
   getDocs,
   serverTimestamp,
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { MODES } from './config/constants.js';
 
-// ── Replace with your Firebase project config ──
 const firebaseConfig = {
   apiKey: 'YOUR_API_KEY',
   authDomain: 'YOUR_PROJECT.firebaseapp.com',
@@ -45,7 +32,6 @@ const firebaseConfig = {
 let db = null;
 let initialized = false;
 
-/** Initialize Firebase (safe to call multiple times) */
 export function initFirebase() {
   if (initialized) return db;
   try {
@@ -58,16 +44,14 @@ export function initFirebase() {
   return db;
 }
 
-/** Check if Firebase is configured with real credentials */
 export function isFirebaseConfigured() {
   return firebaseConfig.apiKey !== 'YOUR_API_KEY';
 }
 
 /**
- * Submit a score to the leaderboard
- * @returns {Promise<string|null>} document ID or null on failure
+ * Submit a score to the leaderboard.
  */
-export async function submitScore({ name, department, year, score, mode }) {
+export async function submitScore({ name, role, department, year, score, mode }) {
   if (!initFirebase() || !isFirebaseConfigured()) {
     console.warn('Firebase not configured — score not submitted');
     return null;
@@ -76,8 +60,9 @@ export async function submitScore({ name, department, year, score, mode }) {
   try {
     const docRef = await addDoc(collection(db, 'leaderboard'), {
       name,
+      role: role || 'student',
       department,
-      year,
+      year: year || 'Lecturer',
       score,
       mode,
       timestamp: serverTimestamp(),
@@ -90,26 +75,71 @@ export async function submitScore({ name, department, year, score, mode }) {
 }
 
 /**
- * Fetch top N leaderboard entries
- * @returns {Promise<Array>}
+ * Fetch leaderboard entries with optional filters.
+ * @param {Object} options
+ * @param {string} options.modeId - Mode id (flappy_cst, journey, department)
+ * @param {string} [options.department] - Filter by department
+ * @param {string} [options.role] - Filter by role (student/lecturer)
+ * @param {number} [options.topN=10]
  */
-export async function getLeaderboard(topN = 10) {
+export async function getLeaderboard({ modeId, department, role, topN = 10 } = {}) {
   if (!initFirebase() || !isFirebaseConfigured()) {
     return [];
   }
 
+  const modeInfo = Object.values(MODES).find((m) => m.id === modeId);
+  const modeName = modeInfo?.name || modeId;
+
   try {
-    const q = query(
-      collection(db, 'leaderboard'),
-      orderBy('score', 'desc'),
-      limit(topN)
-    );
+    // Build query with available filters
+    const constraints = [where('mode', '==', modeName)];
+
+    if (modeId === 'department') {
+      if (department) constraints.push(where('department', '==', department));
+      if (role) constraints.push(where('role', '==', role));
+    }
+
+    constraints.push(orderBy('score', 'desc'));
+    constraints.push(limit(topN));
+
+    const q = query(collection(db, 'leaderboard'), ...constraints);
     const snapshot = await getDocs(q);
+
     return snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
       timestamp: doc.data().timestamp?.toDate?.() || null,
     }));
+  } catch (err) {
+    // Fallback: fetch more and filter client-side (no composite index needed)
+    console.warn('Leaderboard query fallback:', err.message);
+    return getLeaderboardFallback({ modeId, department, role, topN });
+  }
+}
+
+/** Client-side filter fallback when Firestore composite index is missing */
+async function getLeaderboardFallback({ modeId, department, role, topN }) {
+  try {
+    const modeInfo = Object.values(MODES).find((m) => m.id === modeId);
+    const modeName = modeInfo?.name || modeId;
+
+    const q = query(collection(db, 'leaderboard'), orderBy('score', 'desc'), limit(100));
+    const snapshot = await getDocs(q);
+
+    let entries = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+      timestamp: doc.data().timestamp?.toDate?.() || null,
+    }));
+
+    entries = entries.filter((e) => e.mode === modeName);
+
+    if (modeId === 'department') {
+      if (department) entries = entries.filter((e) => e.department === department);
+      if (role) entries = entries.filter((e) => e.role === role);
+    }
+
+    return entries.slice(0, topN);
   } catch (err) {
     console.error('Leaderboard fetch failed:', err);
     return [];

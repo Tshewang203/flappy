@@ -3,6 +3,14 @@
 export const GAME_WIDTH = 480;
 export const GAME_HEIGHT = 720;
 
+export const GAME_TITLE = 'CST Silver Flight';
+export const GAME_TAGLINE = 'Learn • Play • Compete';
+
+export const ROLES = {
+  STUDENT: 'student',
+  LECTURER: 'lecturer',
+};
+
 export const DEPARTMENTS = [
   'IT',
   'Civil',
@@ -31,33 +39,52 @@ export const MODES = {
     subtitle: 'Classic Mode',
     color: 0x2ecc71,
     emoji: '📚',
-    description: 'Navigate through books, exams & assignments',
+    description: 'Pure gameplay — no interruptions',
+    hasQuiz: false,
+    leaderboardType: 'global',
   },
   JOURNEY: {
     id: 'journey',
     name: '25 Years Journey',
-    subtitle: 'Story Mode',
+    subtitle: 'CST Quiz Mode',
     color: 0x9b59b6,
     emoji: '🎓',
-    description: 'Experience CST evolution through 25 years',
+    description: 'CST history quizzes every 15 obstacles',
+    hasQuiz: true,
+    quizCategory: 'CST',
+    leaderboardType: 'global',
   },
-  HACKATHON: {
-    id: 'hackathon',
-    name: 'Hackathon Escape',
-    subtitle: 'Challenge Mode',
+  DEPARTMENT: {
+    id: 'department',
+    name: 'Department Challenge',
+    subtitle: 'Department Quiz Mode',
     color: 0x3498db,
-    emoji: '💻',
-    description: 'Fast-paced escape from bugs & deadlines',
+    emoji: '🧠',
+    description: 'Department-specific quizzes every 15 obstacles',
+    hasQuiz: true,
+    quizCategory: 'department',
+    leaderboardType: 'department',
   },
 };
 
+// Quiz settings
+export const QUIZ_INTERVAL = 15;
+export const QUIZ_BONUS = 10;
+export const QUIZ_PENALTY = 5;
+export const QUIZ_TIMER_SECONDS = 10;
+export const QUIZ_STREAK_BONUS = 5;
+export const QUIZ_STREAK_THRESHOLD = 3;
+
+// Surprise reward chance (0–1)
+export const SURPRISE_REWARD_CHANCE = 0.04;
+
 // Journey mode background milestones (score thresholds)
 export const JOURNEY_MILESTONES = [
-  { score: 0, era: 'Foundation Years', bgColor: 0x1a1a2e, accent: 0xc0c0c0 },
-  { score: 10, era: 'Growth Phase', bgColor: 0x16213e, accent: 0xa8d8ea },
-  { score: 25, era: 'Expansion Era', bgColor: 0x0f3460, accent: 0xe94560 },
-  { score: 50, era: 'Innovation Age', bgColor: 0x1a1a40, accent: 0x00d2ff },
-  { score: 100, era: 'Silver Jubilee', bgColor: 0x2d1b69, accent: 0xffd700 },
+  { score: 0, era: 'Foundation Years', bgKey: 'bg_foundation', campusKey: 'campus1' },
+  { score: 10, era: 'Growth Phase', bgKey: 'bg_growth', campusKey: 'campus2' },
+  { score: 25, era: 'Expansion Era', bgKey: 'bg_expansion', campusKey: 'campus3' },
+  { score: 50, era: 'Innovation Age', bgKey: 'bg_innovation', campusKey: 'campus4' },
+  { score: 100, era: 'Silver Jubilee', bgKey: 'bg_jubilee', campusKey: 'campus5' },
 ];
 
 // Mode-specific gameplay tuning
@@ -80,14 +107,14 @@ export const MODE_CONFIG = {
     powerUpChance: 0.18,
     obstacles: ['book', 'exam', 'assignment'],
   },
-  hackathon: {
-    initialSpeed: 220,
-    maxSpeed: 400,
-    initialGap: 180,
-    minGap: 110,
-    spawnInterval: 1800,
-    powerUpChance: 0.25,
-    obstacles: ['bug', 'error', 'deadline'],
+  department: {
+    initialSpeed: 185,
+    maxSpeed: 330,
+    initialGap: 195,
+    minGap: 125,
+    spawnInterval: 2100,
+    powerUpChance: 0.2,
+    obstacles: ['book', 'exam', 'assignment'],
   },
 };
 
@@ -104,22 +131,72 @@ export const GRAVITY = 1200;
 export const JUMP_VELOCITY = -380;
 export const MAX_FALL_SPEED = 600;
 
-// UI colors (silver jubilee theme)
+// Avatar
+export const AVATAR_SIZE = 128;
+
+// Asset paths (add your files to these locations)
+export const ASSETS = {
+  logo: 'assets/images/cst-logo.png',
+  campus: [
+    'assets/images/campus1.png',
+    'assets/images/campus2.png',
+    'assets/images/campus3.png',
+    'assets/images/campus4.png',
+    'assets/images/campus5.png',
+  ],
+  campusVideo: 'assets/video/campus-bg.mp4',
+};
+
+// UI colors — CST logo blue + silver jubilee
 export const COLORS = {
+  cstBlue: '#0067B1',
+  cstBlueLight: '#0094DB',
+  cstBlueDark: '#004F8A',
+  cstBlueGlass: 'rgba(0, 103, 177, 0.35)',
   silver: '#c0c0c0',
   silverLight: '#e8e8e8',
   silverDark: '#8a8a8a',
-  blue: '#1e3a5f',
-  blueLight: '#2d5a8e',
-  blueDark: '#0f1f33',
+  blue: '#0067B1',
+  blueLight: '#0094DB',
+  blueDark: '#004F8A',
   gold: '#ffd700',
   white: '#ffffff',
-  text: '#e8e8e8',
-  textMuted: '#a0aec0',
+  text: '#ffffff',
+  textMuted: 'rgba(255, 255, 255, 0.75)',
+  glass: 'rgba(0, 103, 177, 0.35)',
 };
 
 export const STORAGE_KEYS = {
   PLAYER: 'cst_silver_flight_player',
   BEST_SCORES: 'cst_silver_flight_best',
   SOUND: 'cst_silver_flight_sound',
+  MUSIC: 'cst_silver_flight_music',
+  SFX: 'cst_silver_flight_sfx',
+  AVATAR: 'cst_silver_flight_avatar',
+  STATS: 'cst_silver_flight_stats',
+  ACHIEVEMENTS: 'cst_silver_flight_achievements',
+  MESSAGES: 'cst_silver_flight_messages',
+  INTRO_SEEN: 'cst_silver_flight_intro_seen',
+};
+
+/** Optional MP3 files — procedural beeps used when missing */
+export const AUDIO_FILES = {
+  jump: 'assets/audio/jump.mp3',
+  hit: 'assets/audio/hit.mp3',
+  point: 'assets/audio/point.mp3',
+  powerup: 'assets/audio/powerup.mp3',
+  quiz_correct: 'assets/audio/quiz-correct.mp3',
+  quiz_wrong: 'assets/audio/quiz-wrong.mp3',
+  achievement: 'assets/audio/achievement.mp3',
+  gameover: 'assets/audio/gameover.mp3',
+  bgm: 'assets/audio/bgm.mp3',
+  bgm_intense: 'assets/audio/bgm-intense.mp3',
+  button_click: 'assets/audio/button-click.mp3',
+};
+
+/** Default avatar styles when no photo is taken */
+export const AVATAR_STYLES = {
+  student: { id: 'student', emoji: '🎓', label: 'Student' },
+  lecturer: { id: 'lecturer', emoji: '👨‍🏫', label: 'Lecturer' },
+  hacker: { id: 'hacker', emoji: '🧑‍💻', label: 'Hacker' },
 };

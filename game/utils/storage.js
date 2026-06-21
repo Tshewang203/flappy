@@ -1,4 +1,4 @@
-import { STORAGE_KEYS } from '../config/constants.js';
+import { STORAGE_KEYS, AVATAR_SIZE } from '../config/constants.js';
 
 /** Read parsed JSON from localStorage safely */
 function readJSON(key, fallback = null) {
@@ -41,7 +41,7 @@ export function updateBestScore(mode, score) {
   return false;
 }
 
-/** Sound preference (default on) */
+/** Legacy master sound toggle */
 export function isSoundEnabled() {
   const val = localStorage.getItem(STORAGE_KEYS.SOUND);
   return val === null ? true : val === 'true';
@@ -49,4 +49,71 @@ export function isSoundEnabled() {
 
 export function setSoundEnabled(enabled) {
   localStorage.setItem(STORAGE_KEYS.SOUND, String(enabled));
+  setMusicEnabled(enabled);
+  setSfxEnabled(enabled);
+}
+
+/** Music preference (default on) */
+export function isMusicEnabled() {
+  if (!isSoundEnabled()) return false;
+  const val = localStorage.getItem(STORAGE_KEYS.MUSIC);
+  return val === null ? true : val === 'true';
+}
+
+export function setMusicEnabled(enabled) {
+  localStorage.setItem(STORAGE_KEYS.MUSIC, String(enabled));
+}
+
+/** Sound effects preference (default on) */
+export function isSfxEnabled() {
+  if (!isSoundEnabled()) return false;
+  const val = localStorage.getItem(STORAGE_KEYS.SFX);
+  return val === null ? true : val === 'true';
+}
+
+export function setSfxEnabled(enabled) {
+  localStorage.setItem(STORAGE_KEYS.SFX, String(enabled));
+}
+
+/** Get player avatar as base64 data URL */
+export function getAvatar() {
+  return localStorage.getItem(STORAGE_KEYS.AVATAR);
+}
+
+/** Save avatar base64 to localStorage (never sent to Firebase) */
+export function saveAvatar(base64) {
+  localStorage.setItem(STORAGE_KEYS.AVATAR, base64);
+}
+
+/** Remove stored avatar */
+export function removeAvatar() {
+  localStorage.removeItem(STORAGE_KEYS.AVATAR);
+}
+
+/**
+ * Resize an image source to a square base64 PNG.
+ * @param {string} src - data URL or image URL
+ * @param {number} size - output dimension
+ */
+export function resizeImageToBase64(src, size = AVATAR_SIZE) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+
+      // Center-crop to square
+      const minDim = Math.min(img.width, img.height);
+      const sx = (img.width - minDim) / 2;
+      const sy = (img.height - minDim) / 2;
+
+      ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, size, size);
+      resolve(canvas.toDataURL('image/png'));
+    };
+    img.onerror = reject;
+    img.src = src;
+  });
 }

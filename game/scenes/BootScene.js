@@ -1,7 +1,7 @@
 import { GAME_WIDTH, GAME_HEIGHT, COLORS } from '../config/constants.js';
 
 /**
- * BootScene — Generates all procedural textures and loads assets.
+ * BootScene — Loads optional assets and generates procedural textures.
  */
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -9,41 +9,17 @@ export class BootScene extends Phaser.Scene {
   }
 
   preload() {
-    // Progress bar
-    const barW = GAME_WIDTH * 0.6;
-    const barH = 20;
-    const barX = (GAME_WIDTH - barW) / 2;
-    const barY = GAME_HEIGHT / 2;
-
-    const progressBg = this.add.graphics();
-    progressBg.fillStyle(0x1e3a5f, 1);
-    progressBg.fillRoundedRect(barX, barY, barW, barH, 10);
-
-    const progressBar = this.add.graphics();
-    const loadingText = this.add
-      .text(GAME_WIDTH / 2, barY - 40, 'Loading...', {
-        fontFamily: 'Orbitron',
-        fontSize: '18px',
-        color: COLORS.silver,
-      })
-      .setOrigin(0.5);
-
-    this.load.on('progress', (value) => {
-      progressBar.clear();
-      progressBar.fillStyle(0xc0c0c0, 1);
-      progressBar.fillRoundedRect(barX + 2, barY + 2, (barW - 4) * value, barH - 4, 8);
-    });
-
-    this.load.on('complete', () => {
-      progressBg.destroy();
-      progressBar.destroy();
-      loadingText.destroy();
-    });
+    // Brief loading text — no blocking asset loads
+    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'Loading...', {
+      fontFamily: 'Orbitron', fontSize: '18px', color: COLORS.silver,
+    }).setOrigin(0.5).setName('boot_loading');
   }
 
   create() {
+    this.children.getByName('boot_loading')?.destroy();
     this.generateTextures();
-    this.scene.start('MenuScene');
+    document.getElementById('loading-screen')?.classList.add('hidden');
+    this.scene.start('IntroScene');
   }
 
   /** Create all game textures procedurally */
@@ -54,6 +30,23 @@ export class BootScene extends Phaser.Scene {
     this.createBackgroundTextures();
     this.createUITextures();
     this.createParticleTexture();
+    this.createAvatarTextures();
+  }
+
+  createAvatarTextures() {
+    const styles = [
+      { key: 'avatar_lecturer', color: 0x0067b1, emoji: '👨‍🏫' },
+      { key: 'avatar_hacker', color: 0x2ecc71, emoji: '🧑‍💻' },
+    ];
+    styles.forEach(({ key, color }) => {
+      const g = this.make.graphics({ x: 0, y: 0, add: false });
+      g.fillStyle(color, 1);
+      g.fillCircle(24, 24, 22);
+      g.lineStyle(2, 0xffd700, 0.8);
+      g.strokeCircle(24, 24, 22);
+      g.generateTexture(key, 48, 48);
+      g.destroy();
+    });
   }
 
   createBirdTexture() {
@@ -211,20 +204,20 @@ export class BootScene extends Phaser.Scene {
     logo.generateTexture('logo', 120, 120);
     logo.destroy();
 
-    // Button background
+    // Button background — CST blue glass
     const btn = this.make.graphics({ x: 0, y: 0, add: false });
-    btn.fillStyle(0x1e3a5f, 0.9);
+    btn.fillStyle(0x0067b1, 0.55);
     btn.fillRoundedRect(0, 0, 220, 52, 26);
-    btn.lineStyle(2, 0xc0c0c0, 0.6);
+    btn.lineStyle(2, 0x0094db, 0.85);
     btn.strokeRoundedRect(0, 0, 220, 52, 26);
     btn.generateTexture('btn_bg', 220, 52);
     btn.destroy();
 
     // Card background
     const card = this.make.graphics({ x: 0, y: 0, add: false });
-    card.fillStyle(0x1e3a5f, 0.85);
+    card.fillStyle(0x0067b1, 0.5);
     card.fillRoundedRect(0, 0, 400, 120, 16);
-    card.lineStyle(2, 0xc0c0c0, 0.4);
+    card.lineStyle(2, 0x0094db, 0.5);
     card.strokeRoundedRect(0, 0, 400, 120, 16);
     card.generateTexture('card_bg', 400, 120);
     card.destroy();

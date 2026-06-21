@@ -3,14 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="description" content="CST Silver Flight: Choose Your Journey — A Flappy Bird game celebrating CST's 25th Silver Jubilee" />
-  <title>CST Silver Flight: Choose Your Journey</title>
+  <meta name="description" content="CST Silver Flight: Learn • Play • Compete — Celebrating CST's 25th Silver Jubilee" />
+  <title>CST Silver Flight: Learn • Play • Compete</title>
   <link rel="stylesheet" href="styles.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
 </head>
 <body>
+  <!-- Campus video background (home screen) — add your video to assets/video/campus-bg.mp4 -->
+  <video id="campus-video" autoplay muted loop playsinline poster="">
+    <source src="assets/video/campus-bg.mp4" type="video/mp4" />
+  </video>
+
   <div id="game-container">
     <div id="loading-screen">
       <div class="loader-ring"></div>
@@ -18,10 +23,7 @@
     </div>
   </div>
 
-  <!-- Phaser 3 -->
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
-
-  <!-- Game modules -->
   <script type="module" src="main.js"></script>
 </body>
 </html>
