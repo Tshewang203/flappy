@@ -1,0 +1,71 @@
+/* CST Silver Flight — Global Styles */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: linear-gradient(135deg, #0f1f33 0%, #1e3a5f 50%, #2d1b69 100%);
+  font-family: 'Inter', sans-serif;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#game-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+#game-container canvas {
+  display: block;
+  border-radius: 12px;
+  box-shadow:
+    0 0 40px rgba(192, 192, 192, 0.15),
+    0 0 80px rgba(30, 58, 95, 0.3);
+}
+
+/* Loading screen */
+#loading-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  color: #c0c0c0;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 14px;
+  letter-spacing: 2px;
+}
+
+.loader-ring {
+  width: 48px;
+  height: 48px;
+  border: 3px solid rgba(192, 192, 192, 0.2);
+  border-top-color: #c0c0c0;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+#loading-screen.hidden {
+  display: none;
+}
+
+/* Mobile fullscreen */
+@media (max-width: 520px) {
+  #game-container canvas {
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
