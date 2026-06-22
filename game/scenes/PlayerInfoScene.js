@@ -1,6 +1,6 @@
 import { GAME_WIDTH, GAME_HEIGHT, DEPARTMENTS, YEARS, COLORS, ROLES, AVATAR_STYLES } from '../config/constants.js';
 import { getPlayer, savePlayer, clearPlayer, getAvatar } from '../utils/storage.js';
-import { openCameraCapture, openImageUpload, clearAvatar } from '../utils/avatar.js';
+import { openCameraCapture, openImageUpload, clearAvatar, buildFaceTexture } from '../utils/avatar.js';
 import { UIHelper } from '../utils/UIHelper.js';
 
 /**
@@ -142,13 +142,14 @@ export class PlayerInfoScene extends Phaser.Scene {
       .setStrokeStyle(2, 0xc0c0c0, 0.5);
 
     this.avatarImage = null;
+    this.avatarPlaceholder = null;
     if (this.avatarData && this.textures.exists('player_avatar_preview')) {
       this.textures.remove('player_avatar_preview');
     }
     if (this.avatarData) {
       this.loadAvatarPreview(this.avatarData, y + 45);
     } else {
-      this.add.text(GAME_WIDTH / 2, y + 45, '🙂', { fontSize: '28px' }).setOrigin(0.5);
+      this.avatarPlaceholder = this.add.text(GAME_WIDTH / 2, y + 45, '🙂', { fontSize: '28px' }).setOrigin(0.5);
     }
 
     const btnY = y + 95;
@@ -203,21 +204,32 @@ export class PlayerInfoScene extends Phaser.Scene {
     this.styleText?.setText(`${styles[this.avatarStyleIndex].emoji} ${styles[this.avatarStyleIndex].label}`);
   }
 
-  loadAvatarPreview(data, y) {
+  async loadAvatarPreview(data, y) {
     if (this.avatarImage) this.avatarImage.destroy();
+    this.avatarPlaceholder?.destroy();
+    this.avatarPlaceholder = null;
+
     const key = 'player_avatar_preview';
     if (this.textures.exists(key)) this.textures.remove(key);
-    this.textures.addBase64(key, data);
-    this.avatarImage = this.add.image(GAME_WIDTH / 2, y, key)
-      .setDisplaySize(56, 56)
-      .setDepth(1);
+
+    try {
+      await buildFaceTexture(this, data, key);
+      this.avatarImage = this.add.image(GAME_WIDTH / 2, y, key)
+        .setDisplaySize(56, 56)
+        .setDepth(2);
+    } catch {
+      this.textures.addBase64(key, data);
+      this.avatarImage = this.add.image(GAME_WIDTH / 2, y, key)
+        .setDisplaySize(56, 56)
+        .setDepth(2);
+    }
   }
 
   async handleTakePhoto(y) {
     const result = await openCameraCapture();
     if (result) {
       this.avatarData = result;
-      this.loadAvatarPreview(result, y);
+      await this.loadAvatarPreview(result, y);
       this.cameras.main.flash(200, 192, 192, 192, false);
     }
   }
@@ -226,7 +238,7 @@ export class PlayerInfoScene extends Phaser.Scene {
     const result = await openImageUpload();
     if (result) {
       this.avatarData = result;
-      this.loadAvatarPreview(result, y);
+      await this.loadAvatarPreview(result, y);
     }
   }
 

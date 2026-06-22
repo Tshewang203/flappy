@@ -129,6 +129,7 @@ body.video-active #game-container canvas {
   border: 3px solid rgba(255, 255, 255, 0.5);
   margin: 0 auto 16px;
   display: block;
+  background: #1e3a5f;
 }
 
 .avatar-error {

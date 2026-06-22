@@ -1,4 +1,5 @@
 import { GAME_WIDTH, GAME_HEIGHT, COLORS } from '../config/constants.js';
+import { loadOptionalImages } from '../utils/assets.js';
 
 /**
  * BootScene — Loads optional assets and generates procedural textures.
@@ -18,6 +19,7 @@ export class BootScene extends Phaser.Scene {
   create() {
     this.children.getByName('boot_loading')?.destroy();
     this.generateTextures();
+    loadOptionalImages(this);
     document.getElementById('loading-screen')?.classList.add('hidden');
     this.scene.start('IntroScene');
   }
@@ -25,6 +27,7 @@ export class BootScene extends Phaser.Scene {
   /** Create all game textures procedurally */
   generateTextures() {
     this.createBirdTexture();
+    this.createWingTexture();
     this.createObstacleTextures();
     this.createPowerUpTextures();
     this.createBackgroundTextures();
@@ -47,6 +50,16 @@ export class BootScene extends Phaser.Scene {
       g.generateTexture(key, 48, 48);
       g.destroy();
     });
+  }
+
+  createWingTexture() {
+    const g = this.make.graphics({ x: 0, y: 0, add: false });
+    g.fillStyle(0xe6c200, 1);
+    g.fillEllipse(18, 9, 34, 16);
+    g.fillStyle(0xffd700, 0.55);
+    g.fillEllipse(10, 9, 18, 9);
+    g.generateTexture('wing', 36, 18);
+    g.destroy();
   }
 
   createBirdTexture() {

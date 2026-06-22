@@ -14,6 +14,8 @@ import {
 } from '../config/constants.js';
 import { LEGACY_MOMENTS, CAMPUS_LOCATIONS } from '../data/legacy.js';
 import { getPlayer, getAvatar } from '../utils/storage.js';
+import { buildFaceTexture } from '../utils/avatar.js';
+import { loadOptionalImages } from '../utils/assets.js';
 import { UIHelper } from '../utils/UIHelper.js';
 import { AudioManager } from '../utils/audio.js';
 
@@ -26,9 +28,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   init(data) {
-    this.mode = data.mode || 'flappy_cst';
-    this.config = MODE_CONFIG[this.mode];
-    this.modeInfo = Object.values(MODES).find((m) => m.id === this.mode);
+    this.mode = data?.mode || 'flappy_cst';
+    this.config = MODE_CONFIG[this.mode] || MODE_CONFIG.flappy_cst;
+    this.modeInfo = Object.values(MODES).find((m) => m.id === this.mode) || MODES.FLAPPY_CST;
     this.player = getPlayer();
     this.score = 0;
     this.isGameOver = false;
@@ -37,7 +39,6 @@ export class GameScene extends Phaser.Scene {
     this.gameSpeed = this.config.initialSpeed;
     this.pipeGap = this.config.initialGap;
     this.pipeTimer = 0;
-    this.scoreTimer = 0;
     this.obstaclesPassed = 0;
     this.lastQuizAt = 0;
     this.quizStreak = 0;
@@ -50,17 +51,27 @@ export class GameScene extends Phaser.Scene {
     this.slowMotion = false;
 
     this.currentEra = 0;
+    this.bgTransitioning = false;
     this.bgKeys = ['bg_foundation', 'bg_growth', 'bg_expansion', 'bg_innovation', 'bg_jubilee'];
     this.campusKeys = ['campus1', 'campus2', 'campus3', 'campus4', 'campus5'];
     this.pipeKeys = ['pipe_silver', 'pipe_blue', 'pipe_purple', 'pipe_red'];
   }
 
   create() {
+    this.physics.resume();
+    this.scene.resume();
+
+    ['UIScene', 'QuizScene', 'LegacyScene'].forEach((key) => {
+      if (this.scene.isActive(key)) this.scene.stop(key);
+    });
+
     UIHelper.setOpaqueBackground(this);
     this.cameras.main.fadeIn(300);
+    loadOptionalImages(this);
 
     const initialBg = this.getBackgroundKey(0);
     this.bg = this.add.image(GAME_WIDTH / 2, GAME_HEIGHT / 2, initialBg).setDepth(-2);
+    this.fitBackground();
 
     if (this.mode === 'journey') {
       this.eraText = this.add.text(GAME_WIDTH / 2, 50, JOURNEY_MILESTONES[0].era, {
@@ -90,10 +101,18 @@ export class GameScene extends Phaser.Scene {
     this.physics.add.overlap(this.bird, this.powerUps, this.collectPowerUp, null, this);
     this.physics.add.collider(this.bird, this.groundBody, this.hitGround, null, this);
 
-    this.scene.launch('UIScene', { mode: this.mode, player: this.player });
+    this.scene.run('UIScene', { mode: this.mode, player: this.player });
 
-    this.input.on('pointerdown', () => this.handleJump());
-    this.input.keyboard.on('keydown-SPACE', () => this.handleJump());
+    this._jumpHandler = () => this.handleJump();
+    this.input.on('pointerdown', this._jumpHandler);
+    this.input.keyboard?.on('keydown-SPACE', this._jumpHandler);
+
+    const modeTag = this.modeInfo?.hasQuiz
+      ? (this.mode === 'journey' ? '🎓 CST Quiz Mode' : `🧠 ${this.player?.department || 'Dept'} Quiz`)
+      : '📚 Classic Mode — No Quizzes';
+    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 95, modeTag, {
+      fontFamily: 'Inter', fontSize: '10px', color: 'rgba(255,255,255,0.55)',
+    }).setOrigin(0.5).setDepth(20);
 
     this.readyText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 50, 'Tap or Press SPACE\nto Start', {
       fontFamily: 'Orbitron', fontSize: '20px', color: '#c0c0c0', align: 'center',
@@ -130,18 +149,88 @@ export class GameScene extends Phaser.Scene {
       this.isPaused = false;
       this.physics.resume();
     });
+
+    this.events.once('shutdown', this.cleanupGameScene, this);
+  }
+
+  cleanupGameScene() {
+    this.gameOverTimer?.remove(false);
+    this.flapTween?.stop();
+    this.tweens.killTweensOf(this.wingBack);
+    this.tweens.killTweensOf(this.wingFront);
+    this.wingBack?.destroy();
+    this.wingFront?.destroy();
+    if (this._jumpHandler) {
+      this.input.off('pointerdown', this._jumpHandler);
+      this.input.keyboard?.off('keydown-SPACE', this._jumpHandler);
+    }
+    ['UIScene', 'QuizScene', 'LegacyScene'].forEach((key) => {
+      if (this.scene.isActive(key)) this.scene.stop(key);
+    });
+  }
+
+  createFacePlayer(avatar) {
+    const faceKey = 'player_face';
+    if (this.textures.exists(faceKey)) this.textures.remove(faceKey);
+
+    this.bird = this.physics.add.sprite(100, GAME_HEIGHT / 2, 'logo');
+    this.bird.setDisplaySize(48, 48);
+    this.bird.body.setCircle(22);
+    this.bird.body.setOffset(2, 2);
+
+    this.wingBack = this.add.image(this.bird.x - 28, this.bird.y + 2, 'wing')
+      .setDisplaySize(30, 16).setOrigin(1, 0.5).setDepth(4);
+    this.wingFront = this.add.image(this.bird.x + 28, this.bird.y + 2, 'wing')
+      .setDisplaySize(30, 16).setOrigin(0, 0.5).setFlipX(true).setDepth(6);
+
+    buildFaceTexture(this, avatar, faceKey)
+      .then(() => {
+        if (this.bird?.scene) {
+          this.bird.setTexture(faceKey);
+          this.bird.setDisplaySize(48, 48);
+        }
+      })
+      .catch(() => {
+        this.textures.addBase64(faceKey, avatar);
+        if (this.bird?.scene) {
+          this.bird.setTexture(faceKey);
+          this.bird.setDisplaySize(48, 48);
+        }
+      });
+
+    this.startWingFlap();
+  }
+
+  startWingFlap() {
+    if (!this.wingBack || !this.wingFront) return;
+    this.flapTween = this.tweens.add({
+      targets: this.wingBack,
+      angle: { from: 28, to: -32 },
+      duration: 110,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+    this.tweens.add({
+      targets: this.wingFront,
+      angle: { from: -28, to: 32 },
+      duration: 110,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+  }
+
+  syncWings() {
+    if (!this.wingBack || !this.wingFront || !this.bird) return;
+    this.wingBack.setPosition(this.bird.x - 26, this.bird.y + 2);
+    this.wingFront.setPosition(this.bird.x + 26, this.bird.y + 2);
   }
 
   createPlayerSprite() {
     const avatar = getAvatar();
     if (avatar) {
-      const key = 'player_avatar';
-      if (this.textures.exists(key)) this.textures.remove(key);
-      this.textures.addBase64(key, avatar);
-      this.bird = this.physics.add.sprite(100, GAME_HEIGHT / 2, key);
-      this.bird.setDisplaySize(52, 52);
-      this.bird.body.setCircle(22);
-      this.bird.body.setOffset(4, 4);
+      this.createFacePlayer(avatar);
     } else {
       const styleMap = { student: 'bird', lecturer: 'avatar_lecturer', hacker: 'avatar_hacker' };
       const styleId = this.player?.avatarStyle || (this.player?.role === ROLES.LECTURER ? 'lecturer' : 'student');
@@ -166,6 +255,52 @@ export class GameScene extends Phaser.Scene {
     const campusKey = milestone.campusKey;
     if (this.textures.exists(campusKey)) return campusKey;
     return milestone.bgKey || this.bgKeys[eraIndex] || 'bg_foundation';
+  }
+
+  fitBackground() {
+    if (!this.bg) return;
+    this.bg.setDisplaySize(GAME_WIDTH, GAME_HEIGHT);
+    this.bg.setPosition(GAME_WIDTH / 2, GAME_HEIGHT / 2);
+  }
+
+  transitionBackground(newEra, options = {}) {
+    const milestone = JOURNEY_MILESTONES[newEra] || JOURNEY_MILESTONES[0];
+    const newBg = this.getBackgroundKey(newEra);
+    if (this.bgTransitioning || this.bg.texture.key === newBg) {
+      this.currentEra = newEra;
+      return;
+    }
+
+    this.bgTransitioning = true;
+    this.currentEra = newEra;
+
+    this.tweens.add({
+      targets: this.bg,
+      alpha: 0,
+      duration: 450,
+      onComplete: () => {
+        this.bg.setTexture(newBg);
+        this.fitBackground();
+        this.tweens.add({
+          targets: this.bg,
+          alpha: 1,
+          duration: 450,
+          onComplete: () => { this.bgTransitioning = false; },
+        });
+      },
+    });
+
+    if (options.updateEraText && this.eraText) {
+      this.eraText.setText(`✦ ${milestone.era} ✦`);
+      this.cameras.main.flash(400, 255, 215, 0, false);
+    }
+
+    const loc = CAMPUS_LOCATIONS[milestone.campusKey];
+    if (loc && this.campusLabel) this.campusLabel.setText(`📍 ${loc}`);
+
+    if (options.emitEraChange) {
+      this.events.emit('eraChange', milestone);
+    }
   }
 
   handleJump() {
@@ -212,6 +347,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     if (this.hasShield) this.shieldFx.setPosition(this.bird.x, this.bird.y);
+    if (this.wingBack) this.syncWings();
     if (!this.isStarted) return;
 
     this.ground.tilePositionX += this.gameSpeed * 0.02 * dtScale;
@@ -249,17 +385,6 @@ export class GameScene extends Phaser.Scene {
       if (label.x < -50) label.destroy();
     });
 
-    this.scoreTimer += dt;
-    if (this.scoreTimer >= 500) {
-      this.scoreTimer = 0;
-      this.addScore(1);
-    }
-
-    if (this.score > 0 && this.score % 5 === 0) {
-      this.gameSpeed = Math.min(this.config.maxSpeed, this.config.initialSpeed + this.score * 2);
-      this.pipeGap = Math.max(this.config.minGap, this.config.initialGap - this.score * 0.8);
-    }
-
     if (this.score >= 50 && !this.intenseBgmStarted) {
       this.intenseBgmStarted = true;
       AudioManager.playBGM(this, true);
@@ -271,16 +396,23 @@ export class GameScene extends Phaser.Scene {
   }
 
   updateCampusBackground() {
+    if (this.mode === 'journey') return;
+
     let era = 0;
     for (let i = JOURNEY_MILESTONES.length - 1; i >= 0; i--) {
       if (this.score >= JOURNEY_MILESTONES[i].score) { era = i; break; }
     }
-    if (era !== this.currentEra && this.mode !== 'journey') {
-      this.currentEra = era;
-      const newBg = this.getBackgroundKey(era);
-      this.bg.setTexture(newBg);
-      const loc = CAMPUS_LOCATIONS[JOURNEY_MILESTONES[era].campusKey];
-      if (loc && this.campusLabel) this.campusLabel.setText(`📍 ${loc}`);
+
+    if (era !== this.currentEra) {
+      this.transitionBackground(era);
+      return;
+    }
+
+    if (!this.bgTransitioning) {
+      const preferredBg = this.getBackgroundKey(era);
+      if (preferredBg !== this.bg.texture.key) {
+        this.transitionBackground(era);
+      }
     }
   }
 
@@ -305,7 +437,13 @@ export class GameScene extends Phaser.Scene {
 
   onObstaclePassed() {
     this.obstaclesPassed++;
+    this.addScore(1);
     AudioManager.play(this, 'point', { volume: 0.35 });
+
+    if (this.obstaclesPassed > 0 && this.obstaclesPassed % 5 === 0) {
+      this.gameSpeed = Math.min(this.config.maxSpeed, this.config.initialSpeed + this.obstaclesPassed * 2);
+      this.pipeGap = Math.max(this.config.minGap, this.config.initialGap - this.obstaclesPassed * 0.8);
+    }
 
     if (Math.random() < SURPRISE_REWARD_CHANCE) {
       this.triggerSurpriseReward();
@@ -450,25 +588,15 @@ export class GameScene extends Phaser.Scene {
     }
 
     if (newEra !== this.currentEra) {
-      this.currentEra = newEra;
-      const milestone = JOURNEY_MILESTONES[newEra];
-      const newBg = this.getBackgroundKey(newEra);
+      this.transitionBackground(newEra, { updateEraText: true, emitEraChange: true });
+      return;
+    }
 
-      this.tweens.add({
-        targets: this.bg, alpha: 0, duration: 500,
-        onComplete: () => {
-          this.bg.setTexture(newBg);
-          this.tweens.add({ targets: this.bg, alpha: 1, duration: 500 });
-        },
-      });
-
-      if (this.eraText) {
-        this.eraText.setText(`✦ ${milestone.era} ✦`);
-        this.cameras.main.flash(400, 255, 215, 0, false);
+    if (!this.bgTransitioning) {
+      const preferredBg = this.getBackgroundKey(newEra);
+      if (preferredBg !== this.bg.texture.key) {
+        this.transitionBackground(newEra, { updateEraText: false, emitEraChange: false });
       }
-      const loc = CAMPUS_LOCATIONS[milestone.campusKey];
-      if (loc && this.campusLabel) this.campusLabel.setText(`📍 ${loc}`);
-      this.events.emit('eraChange', milestone);
     }
   }
 
@@ -499,11 +627,12 @@ export class GameScene extends Phaser.Scene {
     AudioManager.play(this, 'hit');
     AudioManager.play(this, 'gameover', { volume: 0.5 });
     AudioManager.stopBGM(this);
-    this.bird.setTint(0xff0000);
+    if (this.bird?.setTint) this.bird.setTint(0xff0000);
     this.physics.pause();
     this.cameras.main.shake(300, 0.02);
 
-    this.time.delayedCall(600, () => {
+    this.gameOverTimer = this.time.delayedCall(600, () => {
+      if (!this.scene.isActive('GameScene')) return;
       this.scene.stop('UIScene');
       this.scene.stop('QuizScene');
       this.scene.stop('LegacyScene');

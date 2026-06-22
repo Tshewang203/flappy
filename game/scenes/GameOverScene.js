@@ -107,10 +107,17 @@ export class GameOverScene extends Phaser.Scene {
 
     UIHelper.createButton(this, GAME_WIDTH / 2, 435, '🔄  RESTART', () => {
       this.saveMessageIfAny();
+<<<<<<< HEAD
 
       // Force a clean GameScene restart to avoid lingering paused physics/state.
       if (this.scene.isActive('GameScene')) this.scene.stop('GameScene');
       this.scene.start('GameScene', { mode: this.mode });
+=======
+      ['UIScene', 'QuizScene', 'LegacyScene'].forEach((key) => {
+        if (this.scene.isActive(key)) this.scene.stop(key);
+      });
+      UIHelper.fadeToScene(this, 'GameScene', { mode: this.mode });
+>>>>>>> 72b441b (Updated web application)
     }, { navigate: true });
 
     UIHelper.createButton(this, GAME_WIDTH / 2, 490, '📤  SUBMIT SCORE', () => this.handleSubmit());

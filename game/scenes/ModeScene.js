@@ -87,7 +87,7 @@ export class ModeScene extends Phaser.Scene {
       this.tweens.add({ targets: container, scaleX: 1, scaleY: 1, duration: 200 });
       bg.setFillStyle(0xffffff, 0.12);
     });
-    container.on('pointerdown', () => {
+    container.on('pointerup', () => {
       UIHelper.goToScene(this, 'GameScene', { mode: mode.id });
     });
   }

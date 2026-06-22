@@ -7,6 +7,84 @@ import { saveAvatar, removeAvatar, resizeImageToBase64 } from './storage.js';
 
 let activeStream = null;
 
+/** Wait until the video element has valid frame dimensions */
+function waitForVideoReady(video, timeoutMs = 10000) {
+  return new Promise((resolve, reject) => {
+    if (video.videoWidth > 0 && video.videoHeight > 0) {
+      resolve();
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      video.removeEventListener('loadeddata', onReady);
+      reject(new Error('Camera not ready'));
+    }, timeoutMs);
+
+    const onReady = () => {
+      if (video.videoWidth > 0 && video.videoHeight > 0) {
+        clearTimeout(timer);
+        video.removeEventListener('loadeddata', onReady);
+        resolve();
+      }
+    };
+
+    video.addEventListener('loadeddata', onReady);
+  });
+}
+
+/** Draw captured video frame onto canvas (center-cropped square) */
+function captureVideoFrame(video, canvas) {
+  const size = 320;
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const srcSize = Math.min(video.videoWidth, video.videoHeight);
+  const sx = (video.videoWidth - srcSize) / 2;
+  const sy = (video.videoHeight - srcSize) / 2;
+  ctx.drawImage(video, sx, sy, srcSize, srcSize, 0, 0, size, size);
+  return canvas.toDataURL('image/png');
+}
+
+/**
+ * Build a circular face texture from a captured/uploaded avatar.
+ * @param {Phaser.Scene} scene
+ * @param {string} avatarBase64
+ * @param {string} textureKey
+ * @returns {Promise<string>} resolved texture key
+ */
+export function buildFaceTexture(scene, avatarBase64, textureKey = 'player_face') {
+  return new Promise((resolve, reject) => {
+    const faceImg = new Image();
+
+    faceImg.onload = () => {
+      const size = 64;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+
+      ctx.beginPath();
+      ctx.arc(size / 2, size / 2, size / 2 - 1, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.clip();
+      ctx.drawImage(faceImg, 0, 0, size, size);
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.65)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(size / 2, size / 2, size / 2 - 2, 0, Math.PI * 2);
+      ctx.stroke();
+
+      if (scene.textures.exists(textureKey)) scene.textures.remove(textureKey);
+      scene.textures.addCanvas(textureKey, canvas);
+      resolve(textureKey);
+    };
+
+    faceImg.onerror = () => reject(new Error('Failed to load avatar image'));
+    faceImg.src = avatarBase64;
+  });
+}
+
 /** Stop any active camera stream */
 export function stopCamera() {
   if (activeStream) {
@@ -78,20 +156,29 @@ export function openCameraCapture() {
         });
     }
 
-    captureBtn.onclick = () => {
-      canvas.width = 320;
-      canvas.height = 320;
-      const ctx = canvas.getContext('2d');
-      const size = Math.min(video.videoWidth, video.videoHeight);
-      const sx = (video.videoWidth - size) / 2;
-      const sy = (video.videoHeight - size) / 2;
-      ctx.drawImage(video, sx, sy, size, size, 0, 0, 320, 320);
-      capturedData = canvas.toDataURL('image/png');
+    captureBtn.onclick = async () => {
+      errorEl.style.display = 'none';
+      captureBtn.disabled = true;
+
+      try {
+        await waitForVideoReady(video);
+      } catch {
+        errorEl.textContent = 'Camera not ready yet. Please wait a moment and try again.';
+        errorEl.style.display = 'block';
+        captureBtn.disabled = false;
+        return;
+      }
+
+      capturedData = captureVideoFrame(video, canvas);
 
       video.style.display = 'none';
       preview.src = capturedData;
       preview.style.display = 'block';
+      preview.onload = () => {
+        preview.style.opacity = '1';
+      };
       captureBtn.style.display = 'none';
+      captureBtn.disabled = false;
       confirmBtn.style.display = 'inline-block';
       retakeBtn.style.display = 'inline-block';
       stopCamera();
