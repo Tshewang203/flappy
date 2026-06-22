@@ -47,6 +47,7 @@ html, body {
   display: block;
   border-radius: 12px;
   pointer-events: auto;
+  filter: drop-shadow(0 0 14px rgba(0, 0, 0, 0.55));
 }
 
 /* Transparent canvas — video visible through UI scenes */

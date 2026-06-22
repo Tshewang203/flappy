@@ -1,4 +1,4 @@
-import { GAME_WIDTH, DEPARTMENTS, YEARS, COLORS, ROLES, AVATAR_STYLES } from '../config/constants.js';
+import { GAME_WIDTH, GAME_HEIGHT, DEPARTMENTS, YEARS, COLORS, ROLES, AVATAR_STYLES } from '../config/constants.js';
 import { getPlayer, savePlayer, clearPlayer, getAvatar } from '../utils/storage.js';
 import { openCameraCapture, openImageUpload, clearAvatar } from '../utils/avatar.js';
 import { UIHelper } from '../utils/UIHelper.js';

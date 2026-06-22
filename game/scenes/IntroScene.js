@@ -19,8 +19,13 @@ export class IntroScene extends Phaser.Scene {
     loadOptionalImages(this);
 
     const logoKey = this.textures.exists('cst_logo') ? 'cst_logo' : 'logo';
+    // Starting page logo (kept visible + animated)
     const logo = this.add.image(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 80, logoKey)
-      .setDisplaySize(120, 120).setDepth(10).setAlpha(0).setScale(0.5);
+      .setDisplaySize(120, 120)
+      .setDepth(10)
+      .setAlpha(0)
+      .setScale(0.5);
+
 
     const title = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 30, GAME_TITLE, {
       fontFamily: 'Orbitron', fontSize: '26px', color: COLORS.white, fontStyle: 'bold',
@@ -49,8 +54,9 @@ export class IntroScene extends Phaser.Scene {
       targets: tapHint, alpha: { from: 0.4, to: 1 }, duration: 900, delay: 800, yoyo: true, repeat: -1,
     });
 
+    // IMPORTANT: AudioContext must start after a user gesture.
+    // Trigger any SFX (including procedural fallbacks) only after tap/click.
     UIHelper.createTapZone(this, () => this.goToMenu(), 50);
-    AudioManager.play(this, 'achievement', { volume: 0.3 });
   }
 
   goToMenu() {

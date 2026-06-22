@@ -170,17 +170,28 @@ export class GameScene extends Phaser.Scene {
 
   handleJump() {
     if (this.isGameOver || this.isPaused) return;
-    if (!this.isStarted) { this.startGame(); return; }
+
+    // First tap/press should both START the game and JUMP.
+    if (!this.isStarted) {
+      this.startGame();
+    }
 
     this.bird.setVelocityY(JUMP_VELOCITY);
     AudioManager.play(this, 'jump');
     this.tweens.add({
-      targets: this.bird, angle: -20, duration: 100,
+      targets: this.bird,
+      angle: -20,
+      duration: 100,
       onComplete: () => {
-        this.tweens.add({ targets: this.bird, angle: { from: -20, to: 45 }, duration: 500 });
+        this.tweens.add({
+          targets: this.bird,
+          angle: { from: -20, to: 45 },
+          duration: 500,
+        });
       },
     });
   }
+
 
   startGame() {
     this.isStarted = true;
@@ -290,6 +301,7 @@ export class GameScene extends Phaser.Scene {
     this.scene.launch('LegacyScene', { moment });
     this.scene.pause();
   }
+
 
   onObstaclePassed() {
     this.obstaclesPassed++;

@@ -53,7 +53,8 @@ export class LegacyScene extends Phaser.Scene {
       targets: continueText, alpha: { from: 0.5, to: 1 }, duration: 700, yoyo: true, repeat: -1,
     });
 
-    this.time.delayedCall(800, () => {
+    // Keep the milestone visible for 3 seconds (auto-allow closing after 3s).
+    this.time.delayedCall(3000, () => {
       this.input.once('pointerdown', () => this.close());
       this.input.keyboard?.once('keydown-SPACE', () => this.close());
     });
