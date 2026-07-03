@@ -1,0 +1,473 @@
+{
+  "Civil": {
+    "easy": [
+      {
+        "type": "mcq",
+        "q": "Which material is most commonly used in reinforced concrete?",
+        "options": ["Steel", "Wood", "Plastic", "Glass"],
+        "answer": 0
+      },
+      {
+        "type": "mcq",
+        "q": "What does a foundation primarily support?",
+        "options": ["Building load", "Wind only", "Paint color", "Lighting"],
+        "answer": 0
+      },
+      {
+        "type": "concept",
+        "q": "Surveying is used to measure:",
+        "options": ["Land and elevations", "Sound waves", "Electric current", "Air pressure"],
+        "answer": 0
+      }
+    ],
+    "medium": [
+      {
+        "type": "concept",
+        "q": "Concrete gains strength primarily through:",
+        "options": ["Hydration of cement", "Freezing", "Evaporation only", "Painting"],
+        "answer": 0
+      },
+      {
+        "type": "application",
+        "q": "A retaining wall is designed to resist:",
+        "options": ["Lateral earth pressure", "Wind uplift only", "Solar radiation", "Acoustic waves"],
+        "answer": 0
+      },
+      {
+        "type": "mcq",
+        "q": "Which structure carries traffic across a valley?",
+        "options": ["Bridge", "Dam only", "Chimney", "Foundation mat"],
+        "answer": 0
+      }
+    ],
+    "hard": [
+      {
+        "type": "application",
+        "q": "In slope stability analysis, the factor of safety should generally be:",
+        "options": ["Greater than 1.0", "Less than 0.5", "Exactly zero", "Unrelated to soil"],
+        "answer": 0
+      },
+      {
+        "type": "application",
+        "q": "Which test best determines the liquid limit of a soil sample?",
+        "options": ["Casagrande cup method", "Sieve analysis only", "Penetration test for concrete", "Brinell hardness test"],
+        "answer": 0
+      }
+    ]
+  },
+  "IT": {
+    "easy": [
+      {
+        "type": "mcq",
+        "q": "What does HTTP stand for?",
+        "options": [
+          "HyperText Transfer Protocol",
+          "High Tech Transfer Process",
+          "Hyperlink Text Terminal Program",
+          "Host Transfer Text Protocol"
+        ],
+        "answer": 0
+      },
+      {
+        "type": "mcq",
+        "q": "Which language is commonly used for web frontends?",
+        "options": ["JavaScript", "Assembly", "Fortran", "COBOL"],
+        "answer": 0
+      },
+      {
+        "type": "concept",
+        "q": "What does CPU stand for?",
+        "options": [
+          "Central Processing Unit",
+          "Computer Personal Utility",
+          "Central Program Unit",
+          "Core Processing Utility"
+        ],
+        "answer": 0
+      }
+    ],
+    "medium": [
+      {
+        "type": "concept",
+        "q": "Which device connects a local network to the internet?",
+        "options": ["Router", "Keyboard", "Monitor", "Printer"],
+        "answer": 0
+      },
+      {
+        "type": "application",
+        "q": "In relational databases, SQL is primarily used to:",
+        "options": ["Query and manage data", "Render 3D graphics", "Compile Java code", "Encrypt hardware"],
+        "answer": 0
+      },
+      {
+        "type": "mcq",
+        "q": "What does API stand for in software development?",
+        "options": [
+          "Application Programming Interface",
+          "Automated Process Integration",
+          "Applied Protocol Instance",
+          "Active Program Index"
+        ],
+        "answer": 0
+      }
+    ],
+    "hard": [
+      {
+        "type": "application",
+        "q": "Which HTTP status code indicates a successful GET request?",
+        "options": ["200", "404", "500", "301"],
+        "answer": 0
+      },
+      {
+        "type": "application",
+        "q": "Big-O notation O(log n) typically describes algorithms that:",
+        "options": ["Halve the search space each step", "Check every element", "Use infinite memory", "Never terminate"],
+        "answer": 0
+      }
+    ]
+  },
+  "Electrical": {
+    "easy": [
+      {
+        "type": "mcq",
+        "q": "The unit of electric current is:",
+        "options": ["Ampere", "Volt", "Watt", "Ohm"],
+        "answer": 0
+      },
+      {
+        "type": "mcq",
+        "q": "AC stands for:",
+        "options": ["Alternating Current", "Active Circuit", "Automatic Control", "Applied Charge"],
+        "answer": 0
+      },
+      {
+        "type": "concept",
+        "q": "The unit of electrical power is:",
+        "options": ["Watt", "Ampere", "Coulomb", "Henry"],
+        "answer": 0
+      }
+    ],
+    "medium": [
+      {
+        "type": "concept",
+        "q": "Ohm's Law relates voltage, current, and:",
+        "options": ["Resistance", "Frequency", "Power factor", "Capacitance"],
+        "answer": 0
+      },
+      {
+        "type": "application",
+        "q": "A transformer is primarily used to:",
+        "options": ["Change voltage levels", "Store water", "Measure temperature", "Filter air"],
+        "answer": 0
+      },
+      {
+        "type": "mcq",
+        "q": "In a DC circuit, power equals:",
+        "options": ["Voltage × Current", "Resistance ÷ Voltage", "Current ÷ Time", "Voltage ÷ Resistance only"],
+        "answer": 0
+      }
+    ],
+    "hard": [
+      {
+        "type": "application",
+        "q": "Three-phase power is preferred in industry because it:",
+        "options": ["Delivers smoother, efficient power transfer", "Eliminates all losses", "Uses only DC", "Requires no grounding"],
+        "answer": 0
+      },
+      {
+        "type": "application",
+        "q": "A circuit breaker protects against:",
+        "options": ["Overcurrent faults", "Gravity", "Soil erosion", "Sound reflection"],
+        "answer": 0
+      }
+    ]
+  },
+  "Mechanical": {
+    "easy": [
+      {
+        "type": "mcq",
+        "q": "Newton's First Law is also called the law of:",
+        "options": ["Inertia", "Gravity", "Thermodynamics", "Friction"],
+        "answer": 0
+      },
+      {
+        "type": "concept",
+        "q": "Stress is defined as force per unit:",
+        "options": ["Area", "Volume", "Time", "Length"],
+        "answer": 0
+      },
+      {
+        "type": "mcq",
+        "q": "Which machine element transfers rotational motion?",
+        "options": ["Gear", "Spring only", "Bolt only", "Gasket"],
+        "answer": 0
+      }
+    ],
+    "medium": [
+      {
+        "type": "application",
+        "q": "An internal combustion engine converts chemical energy into:",
+        "options": ["Mechanical energy", "Light only", "Sound only", "Magnetism"],
+        "answer": 0
+      },
+      {
+        "type": "concept",
+        "q": "CAD in mechanical engineering stands for:",
+        "options": [
+          "Computer-Aided Design",
+          "Central Automatic Drive",
+          "Circuit Analysis Diagram",
+          "Control And Dynamics"
+        ],
+        "answer": 0
+      },
+      {
+        "type": "mcq",
+        "q": "The SI unit of force is:",
+        "options": ["Newton", "Joule", "Pascal", "Watt"],
+        "answer": 0
+      }
+    ],
+    "hard": [
+      {
+        "type": "application",
+        "q": "In fluid mechanics, Bernoulli's principle relates pressure, velocity, and:",
+        "options": ["Elevation", "Magnetic flux", "Thermal conductivity", "Young's modulus"],
+        "answer": 0
+      },
+      {
+        "type": "application",
+        "q": "Fatigue failure in metals typically initiates at:",
+        "options": ["Stress concentration points", "Perfectly smooth surfaces only", "Vacuum regions", "Static equilibrium"],
+        "answer": 0
+      }
+    ]
+  },
+  "Architecture": {
+    "easy": [
+      {
+        "type": "mcq",
+        "q": "A blueprint is a type of:",
+        "options": ["Technical drawing", "Musical score", "Recipe", "Novel"],
+        "answer": 0
+      },
+      {
+        "type": "concept",
+        "q": "Load-bearing walls support:",
+        "options": ["Structural weight", "Only paint", "Only windows", "Only doors"],
+        "answer": 0
+      },
+      {
+        "type": "mcq",
+        "q": "An elevation drawing shows a building's:",
+        "options": ["Exterior view", "Foundation only", "Wiring only", "Plumbing only"],
+        "answer": 0
+      }
+    ],
+    "medium": [
+      {
+        "type": "concept",
+        "q": "Sustainable architecture focuses on:",
+        "options": ["Energy efficiency", "Only decoration", "Only color", "Only furniture"],
+        "answer": 0
+      },
+      {
+        "type": "application",
+        "q": "Scale in architectural drawings indicates:",
+        "options": ["Proportional size", "Paint color", "Room temperature", "Sound level"],
+        "answer": 0
+      },
+      {
+        "type": "mcq",
+        "q": "A floor plan primarily shows:",
+        "options": ["Horizontal layout of spaces", "Roof truss details only", "Soil profile", "Electrical frequency"],
+        "answer": 0
+      }
+    ],
+    "hard": [
+      {
+        "type": "application",
+        "q": "Passive solar design maximizes:",
+        "options": ["Natural heating and daylight", "Noise pollution", "Water waste", "Structural weight only"],
+        "answer": 0
+      },
+      {
+        "type": "application",
+        "q": "Universal design in architecture aims to:",
+        "options": ["Make spaces accessible to all users", "Eliminate all columns", "Remove ventilation", "Ignore building codes"],
+        "answer": 0
+      }
+    ]
+  },
+  "Electronics and Communications": {
+    "easy": [
+      {
+        "type": "mcq",
+        "q": "A diode allows current in:",
+        "options": ["One direction", "All directions", "No direction", "Random directions"],
+        "answer": 0
+      },
+      {
+        "type": "mcq",
+        "q": "FM stands for:",
+        "options": ["Frequency Modulation", "Fast Memory", "Field Magnet", "Fixed Mode"],
+        "answer": 0
+      }
+    ],
+    "medium": [
+      {
+        "type": "concept",
+        "q": "Which component stores electric charge?",
+        "options": ["Capacitor", "Resistor", "Fuse only", "Switch only"],
+        "answer": 0
+      },
+      {
+        "type": "application",
+        "q": "An amplifier increases:",
+        "options": ["Signal strength", "Weight", "Temperature", "Pressure"],
+        "answer": 0
+      }
+    ],
+    "hard": [
+      {
+        "type": "application",
+        "q": "In digital communication, modulation converts:",
+        "options": ["Baseband signal to carrier signal", "Heat to light", "AC to water flow", "Sound to gravity"],
+        "answer": 0
+      }
+    ]
+  },
+  "Instrumentation and Control": {
+    "easy": [
+      {
+        "type": "mcq",
+        "q": "A sensor measures a physical quantity and converts it to:",
+        "options": ["A signal", "Sound only", "Light only", "Heat only"],
+        "answer": 0
+      }
+    ],
+    "medium": [
+      {
+        "type": "concept",
+        "q": "PID control stands for Proportional, Integral, and:",
+        "options": ["Derivative", "Dynamic", "Digital", "Direct"],
+        "answer": 0
+      },
+      {
+        "type": "application",
+        "q": "Calibration ensures instruments give:",
+        "options": ["Accurate readings", "Random values", "No output", "Maximum speed"],
+        "answer": 0
+      }
+    ],
+    "hard": [
+      {
+        "type": "application",
+        "q": "PLC in automation stands for:",
+        "options": [
+          "Programmable Logic Controller",
+          "Power Line Circuit",
+          "Process Load Cell",
+          "Primary Logic Chip"
+        ],
+        "answer": 0
+      }
+    ]
+  },
+  "Software": {
+    "easy": [
+      {
+        "type": "mcq",
+        "q": "Git is primarily used for:",
+        "options": ["Version control", "Image editing", "Video streaming", "Word processing"],
+        "answer": 0
+      }
+    ],
+    "medium": [
+      {
+        "type": "concept",
+        "q": "OOP stands for:",
+        "options": ["Object-Oriented Programming", "Open Output Protocol", "Online Operation Process", "Optical Output Program"],
+        "answer": 0
+      },
+      {
+        "type": "application",
+        "q": "Agile development emphasizes:",
+        "options": ["Iterative delivery", "No planning", "No testing", "No teamwork"],
+        "answer": 0
+      }
+    ],
+    "hard": [
+      {
+        "type": "application",
+        "q": "Unit testing primarily verifies:",
+        "options": ["Individual code components", "Marketing campaigns", "Hardware voltage", "Building permits"],
+        "answer": 0
+      }
+    ]
+  },
+  "Engineering Geology": {
+    "easy": [
+      {
+        "type": "mcq",
+        "q": "Engineering geology studies rock and soil for:",
+        "options": ["Construction safety", "Cooking", "Painting", "Music"],
+        "answer": 0
+      }
+    ],
+    "medium": [
+      {
+        "type": "concept",
+        "q": "Groundwater can affect:",
+        "options": ["Foundation stability", "Screen brightness", "Keyboard speed", "Printer ink"],
+        "answer": 0
+      },
+      {
+        "type": "application",
+        "q": "Site investigation before construction includes:",
+        "options": ["Soil testing", "Menu planning", "Logo design", "Song writing"],
+        "answer": 0
+      }
+    ],
+    "hard": [
+      {
+        "type": "application",
+        "q": "A landslide is a type of:",
+        "options": ["Mass movement", "Chemical reaction", "Electrical fault", "Sound wave"],
+        "answer": 0
+      }
+    ]
+  },
+  "Water Resources Engineering": {
+    "easy": [
+      {
+        "type": "mcq",
+        "q": "A dam is built primarily to:",
+        "options": ["Store or control water", "Generate music", "Print documents", "Cool computers"],
+        "answer": 0
+      }
+    ],
+    "medium": [
+      {
+        "type": "concept",
+        "q": "The hydrological cycle includes evaporation and:",
+        "options": ["Precipitation", "Combustion", "Oxidation", "Fermentation"],
+        "answer": 0
+      },
+      {
+        "type": "application",
+        "q": "Irrigation is used for:",
+        "options": ["Crop watering", "Building walls", "Painting roads", "Writing code"],
+        "answer": 0
+      }
+    ],
+    "hard": [
+      {
+        "type": "application",
+        "q": "Flood control structures include:",
+        "options": ["Levees and reservoirs", "Keyboards", "Monitors", "Speakers"],
+        "answer": 0
+      }
+    ]
+  }
+}

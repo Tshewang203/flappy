@@ -20,16 +20,19 @@ export class UIScene extends Phaser.Scene {
     this.add
       .text(16, 16, `${modeInfo?.emoji || ''} ${modeInfo?.name || ''}`, {
         fontFamily: 'Orbitron',
-        fontSize: '11px',
+        fontSize: '13px',
         color: COLORS.textMuted,
       })
       .setScrollFactor(0);
 
     if (modeInfo?.hasQuiz) {
+      const quizLabel = this.mode === 'journey'
+        ? '🏛️ CST @ 5·15·25'
+        : `🎯 ${this.player?.department || 'Dept'} Quiz`;
       this.add
-        .text(GAME_WIDTH - 16, 16, this.mode === 'journey' ? 'CST Quiz' : 'Dept Quiz', {
+        .text(GAME_WIDTH - 16, 16, quizLabel, {
           fontFamily: 'Inter',
-          fontSize: '10px',
+          fontSize: '12px',
           color: COLORS.gold,
         })
         .setOrigin(1, 0)
@@ -52,7 +55,7 @@ export class UIScene extends Phaser.Scene {
     this.powerUpText = this.add
       .text(GAME_WIDTH / 2, 130, '', {
         fontFamily: 'Inter',
-        fontSize: '13px',
+        fontSize: '15px',
         color: COLORS.gold,
       })
       .setOrigin(0.5)

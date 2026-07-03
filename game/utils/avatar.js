@@ -41,6 +41,9 @@ function captureVideoFrame(video, canvas) {
   const srcSize = Math.min(video.videoWidth, video.videoHeight);
   const sx = (video.videoWidth - srcSize) / 2;
   const sy = (video.videoHeight - srcSize) / 2;
+  // Front-camera streams are mirrored; flip so the saved photo matches natural orientation.
+  ctx.translate(size, 0);
+  ctx.scale(-1, 1);
   ctx.drawImage(video, sx, sy, srcSize, srcSize, 0, 0, size, size);
   return canvas.toDataURL('image/png');
 }
@@ -57,7 +60,7 @@ export function buildFaceTexture(scene, avatarBase64, textureKey = 'player_face'
     const faceImg = new Image();
 
     faceImg.onload = () => {
-      const size = 64;
+      const size = 128;
       const canvas = document.createElement('canvas');
       canvas.width = size;
       canvas.height = size;
@@ -69,8 +72,8 @@ export function buildFaceTexture(scene, avatarBase64, textureKey = 'player_face'
       ctx.clip();
       ctx.drawImage(faceImg, 0, 0, size, size);
 
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.65)';
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
+      ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.arc(size / 2, size / 2, size / 2 - 2, 0, Math.PI * 2);
       ctx.stroke();

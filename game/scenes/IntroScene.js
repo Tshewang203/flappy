@@ -28,15 +28,15 @@ export class IntroScene extends Phaser.Scene {
 
 
     const title = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 30, GAME_TITLE, {
-      fontFamily: 'Orbitron', fontSize: '26px', color: COLORS.white, fontStyle: 'bold',
+      fontFamily: 'Orbitron', fontSize: '28px', color: COLORS.white, fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(10).setAlpha(0);
 
     const tagline = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 70, GAME_TAGLINE, {
-      fontFamily: 'Inter', fontSize: '14px', color: COLORS.gold,
+      fontFamily: 'Inter', fontSize: '16px', color: COLORS.gold,
     }).setOrigin(0.5).setDepth(10).setAlpha(0);
 
     const jubilee = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 105, '🥈 25th Silver Jubilee 🥈', {
-      fontFamily: 'Orbitron', fontSize: '13px', color: COLORS.silver,
+      fontFamily: 'Orbitron', fontSize: '15px', color: COLORS.silver,
     }).setOrigin(0.5).setDepth(10).setAlpha(0);
 
     this.tweens.add({
@@ -47,7 +47,7 @@ export class IntroScene extends Phaser.Scene {
     this.tweens.add({ targets: jubilee, alpha: 1, duration: 800, delay: 1100 });
 
     const tapHint = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 80, 'Tap anywhere to continue', {
-      fontFamily: 'Inter', fontSize: '13px', color: COLORS.textMuted,
+      fontFamily: 'Inter', fontSize: '15px', color: COLORS.textMuted,
     }).setOrigin(0.5).setDepth(20).setAlpha(0);
 
     this.tweens.add({

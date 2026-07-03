@@ -1,4 +1,4 @@
-import { GAME_WIDTH, GAME_HEIGHT } from './config/constants.js';
+import { GAME_WIDTH, GAME_HEIGHT, GAME_SCALE_ZOOM } from './config/constants.js';
 import { BootScene } from './scenes/BootScene.js';
 import { IntroScene } from './scenes/IntroScene.js';
 import { MenuScene } from './scenes/MenuScene.js';
@@ -25,6 +25,8 @@ const config = {
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
+    width: GAME_WIDTH,
+    height: GAME_HEIGHT,
   },
   physics: {
     default: 'arcade',
@@ -58,6 +60,13 @@ game.events.once('ready', () => {
     canvas.style.outline = 'none';
     canvas.focus();
   }
+  game.scale.setZoom(GAME_SCALE_ZOOM);
+  const refreshScale = () => {
+    game.scale.setZoom(GAME_SCALE_ZOOM);
+    game.scale.refresh();
+  };
+  window.addEventListener('resize', refreshScale);
+  refreshScale();
 });
 
 export default game;

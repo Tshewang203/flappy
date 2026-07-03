@@ -2,6 +2,7 @@ import { GAME_WIDTH, GAME_HEIGHT, COLORS, MODES, ROLES } from '../config/constan
 import { updateBestScore, getBestScores, getAvatar } from '../utils/storage.js';
 import { submitScore, isFirebaseConfigured } from '../firebase.js';
 import { recordGameEnd, saveCSTMessage } from '../utils/achievements.js';
+import { buildFaceTexture } from '../utils/avatar.js';
 import { UIHelper } from '../utils/UIHelper.js';
 import { AudioManager } from '../utils/audio.js';
 
@@ -28,6 +29,7 @@ export class GameOverScene extends Phaser.Scene {
   }
 
   create() {
+    this._navigating = false;
     UIHelper.setOpaqueBackground(this);
     UIHelper.fadeIn(this);
     AudioManager.play(this, 'gameover', { volume: 0.45 });
@@ -35,138 +37,170 @@ export class GameOverScene extends Phaser.Scene {
     this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x004f8a, 0.82);
 
     const logoKey = this.textures.exists('cst_logo') ? 'cst_logo' : 'logo';
-    this.add.image(GAME_WIDTH / 2, 45, logoKey).setDisplaySize(45, 45);
+    this.add.image(GAME_WIDTH / 2, 38, logoKey).setDisplaySize(42, 42);
 
     const modeInfo = Object.values(MODES).find((m) => m.id === this.mode);
 
-    this.add.text(GAME_WIDTH / 2, 85, 'GAME OVER', {
-      fontFamily: 'Orbitron', fontSize: '30px', color: '#e74c3c', fontStyle: 'bold',
+    this.add.text(GAME_WIDTH / 2, 72, 'GAME OVER', {
+      fontFamily: 'Orbitron', fontSize: '28px', color: '#e74c3c', fontStyle: 'bold',
     }).setOrigin(0.5).setShadow(0, 0, '#e74c3c', 6, true, true);
 
-    this.add.text(GAME_WIDTH / 2, 118, `${modeInfo?.emoji || ''} ${modeInfo?.name || ''}`, {
-      fontFamily: 'Inter', fontSize: '12px', color: COLORS.textMuted,
+    this.add.text(GAME_WIDTH / 2, 102, `${modeInfo?.emoji || ''} ${modeInfo?.name || ''}`, {
+      fontFamily: 'Inter', fontSize: '14px', color: COLORS.textMuted,
     }).setOrigin(0.5);
 
-    const cardY = 195;
-    this.add.image(GAME_WIDTH / 2, cardY, 'card_bg').setDisplaySize(340, 140).setAlpha(0.9);
+    const cardY = 168;
+    this.add.image(GAME_WIDTH / 2, cardY, 'card_bg').setDisplaySize(340, 148).setAlpha(0.9);
 
-    const avatar = getAvatar();
-    if (avatar) {
-      const key = 'go_avatar';
-      if (this.textures.exists(key)) this.textures.remove(key);
-      this.textures.addBase64(key, avatar);
-      this.add.image(GAME_WIDTH / 2, cardY - 50, key).setDisplaySize(40, 40);
-    }
+    this.loadAvatarImage(cardY - 52);
 
-    this.add.text(GAME_WIDTH / 2, cardY - 12, 'SCORE', {
-      fontFamily: 'Orbitron', fontSize: '12px', color: COLORS.textMuted,
+    this.add.text(GAME_WIDTH / 2, cardY - 8, 'SCORE', {
+      fontFamily: 'Orbitron', fontSize: '13px', color: COLORS.textMuted,
     }).setOrigin(0.5);
 
-    this.add.text(GAME_WIDTH / 2, cardY + 22, String(this.score), {
-      fontFamily: 'Orbitron', fontSize: '48px', color: COLORS.gold, fontStyle: 'bold',
+    this.add.text(GAME_WIDTH / 2, cardY + 20, String(this.score), {
+      fontFamily: 'Orbitron', fontSize: '44px', color: COLORS.gold, fontStyle: 'bold',
     }).setOrigin(0.5);
 
     const bests = getBestScores();
-    this.add.text(GAME_WIDTH / 2, cardY + 58, `Best: ${bests[this.mode] || 0}`, {
-      fontFamily: 'Orbitron', fontSize: '14px', color: COLORS.silver,
+    this.add.text(GAME_WIDTH / 2, cardY + 54, `Best: ${bests[this.mode] || 0}`, {
+      fontFamily: 'Orbitron', fontSize: '13px', color: COLORS.silver,
     }).setOrigin(0.5);
 
+    let nextY = cardY + 78;
     if (this.isNewBest) {
-      this.add.text(GAME_WIDTH / 2, cardY + 78, '🎉 NEW BEST!', {
-        fontFamily: 'Orbitron', fontSize: '12px', color: COLORS.gold,
+      this.add.text(GAME_WIDTH / 2, nextY, '🎉 NEW BEST!', {
+        fontFamily: 'Orbitron', fontSize: '11px', color: COLORS.gold,
       }).setOrigin(0.5);
+      nextY += 22;
     }
 
     if (this.newAchievements.length > 0) {
       AudioManager.play(this, 'achievement');
-      const badges = this.newAchievements.map((a) => `${a.emoji} ${a.name}`).join('  ');
-      this.add.text(GAME_WIDTH / 2, 280, `🏅 ${badges}`, {
-        fontFamily: 'Inter', fontSize: '10px', color: COLORS.gold,
-        wordWrap: { width: GAME_WIDTH - 40 }, align: 'center',
-      }).setOrigin(0.5);
+      const badges = this.newAchievements.map((a) => `${a.emoji} ${a.name}`).join('   ');
+      this.add.text(GAME_WIDTH / 2, nextY + 8, badges, {
+        fontFamily: 'Inter', fontSize: '13px', color: COLORS.gold,
+        wordWrap: { width: GAME_WIDTH - 48 }, align: 'center',
+      }).setOrigin(0.5, 0);
+      nextY += 36;
+    } else {
+      nextY += 14;
     }
 
     if (this.player) {
       const roleIcon = this.player.role === ROLES.LECTURER ? '👨‍🏫' : '🎓';
       const yearStr = this.player.role === ROLES.LECTURER ? 'Lecturer' : this.player.year;
-      this.add.text(GAME_WIDTH / 2, 310, `${roleIcon} ${this.player.name} · ${this.player.department} · ${yearStr}`, {
-        fontFamily: 'Inter', fontSize: '10px', color: COLORS.textMuted,
+      this.add.text(GAME_WIDTH / 2, nextY, `${roleIcon} ${this.player.name}`, {
+        fontFamily: 'Inter', fontSize: '13px', color: COLORS.text,
       }).setOrigin(0.5);
+      this.add.text(GAME_WIDTH / 2, nextY + 18, `${this.player.department} · ${yearStr}`, {
+        fontFamily: 'Inter', fontSize: '12px', color: COLORS.textMuted,
+      }).setOrigin(0.5);
+      nextY += 42;
     }
 
-    // Message to CST
-    this.add.text(GAME_WIDTH / 2, 335, '💬 Message to CST (optional)', {
-      fontFamily: 'Inter', fontSize: '10px', color: COLORS.silver,
+    this.add.text(GAME_WIDTH / 2, nextY, '💬 Message to CST (optional)', {
+      fontFamily: 'Inter', fontSize: '12px', color: COLORS.silver,
     }).setOrigin(0.5);
 
-    this.messageInput = this.createMessageField(GAME_WIDTH / 2, 360, 'Proud to be part of CST ❤️');
+    this.messageInput = this.createMessageField(GAME_WIDTH / 2, nextY + 28, 'Proud to be part of CST ❤️');
 
-    this.statusText = this.add.text(GAME_WIDTH / 2, 395, '', {
+    this.statusText = this.add.text(GAME_WIDTH / 2, nextY + 58, '', {
       fontFamily: 'Inter', fontSize: '10px', color: COLORS.textMuted,
-    }).setOrigin(0.5);
+    }).setOrigin(0.5).setDepth(30);
 
-    UIHelper.createButton(this, GAME_WIDTH / 2, 435, '🔄  RESTART', () => {
+    const btnStartY = nextY + 88;
+    const btnGap = 48;
+
+    UIHelper.createButton(this, GAME_WIDTH / 2, btnStartY, '🔄  RESTART', () => {
       this.saveMessageIfAny();
-<<<<<<< HEAD
-
-      // Force a clean GameScene restart to avoid lingering paused physics/state.
-      if (this.scene.isActive('GameScene')) this.scene.stop('GameScene');
-      this.scene.start('GameScene', { mode: this.mode });
-=======
       ['UIScene', 'QuizScene', 'LegacyScene'].forEach((key) => {
         if (this.scene.isActive(key)) this.scene.stop(key);
       });
+      if (this.scene.isActive('GameScene')) this.scene.stop('GameScene');
       UIHelper.fadeToScene(this, 'GameScene', { mode: this.mode });
->>>>>>> 72b441b (Updated web application)
-    }, { navigate: true });
+    }, { depth: 25, height: 44, fontSize: '15px' });
 
-    UIHelper.createButton(this, GAME_WIDTH / 2, 490, '📤  SUBMIT SCORE', () => this.handleSubmit());
+    UIHelper.createButton(this, GAME_WIDTH / 2, btnStartY + btnGap, '📤  SUBMIT SCORE', () => {
+      this.handleSubmit();
+    }, { depth: 25, height: 44, fontSize: '15px' });
 
-    UIHelper.createButton(this, GAME_WIDTH / 2, 545, '🏛️  HALL OF FAME', () => {
+    UIHelper.createButton(this, GAME_WIDTH / 2, btnStartY + btnGap * 2, '🏛️  HALL OF FAME', () => {
       UIHelper.fadeToScene(this, 'HallOfFameScene');
-    }, { width: 200, fontSize: '13px', navigate: true });
+    }, { depth: 25, width: 220, height: 42, fontSize: '13px' });
 
-    UIHelper.createButton(this, GAME_WIDTH / 2, 600, '🏠  MAIN MENU', () => {
+    UIHelper.createButton(this, GAME_WIDTH / 2, btnStartY + btnGap * 3, '🏠  MAIN MENU', () => {
       this.saveMessageIfAny();
       UIHelper.fadeToScene(this, 'MenuScene');
-    }, { width: 200, height: 40, fontSize: '13px', navigate: true });
+    }, { depth: 25, width: 220, height: 42, fontSize: '13px' });
 
-    UIHelper.createButton(this, GAME_WIDTH / 2, 655, '🎯  CHANGE MODE', () => {
+    UIHelper.createButton(this, GAME_WIDTH / 2, btnStartY + btnGap * 4, '🎯  CHANGE MODE', () => {
       this.saveMessageIfAny();
       UIHelper.fadeToScene(this, 'ModeScene');
-    }, { width: 200, height: 38, fontSize: '12px', navigate: true });
+    }, { depth: 25, width: 220, height: 40, fontSize: '12px' });
+
+    this.scale.on('resize', this.repositionMessageField, this);
+    this.events.once('shutdown', () => {
+      this.scale.off('resize', this.repositionMessageField, this);
+      this.messageInput?.remove();
+    });
+  }
+
+  loadAvatarImage(y) {
+    const avatar = getAvatar();
+    if (!avatar) return;
+
+    const key = 'go_avatar';
+    if (this.textures.exists(key)) this.textures.remove(key);
+
+    const ring = this.add.circle(GAME_WIDTH / 2, y, 26, 0x1e3a5f)
+      .setStrokeStyle(2, 0xc0c0c0, 0.7)
+      .setDepth(4);
+
+    buildFaceTexture(this, avatar, key)
+      .then(() => {
+        if (!this.scene.isActive('GameOverScene')) return;
+        this.avatarImg = this.add.image(GAME_WIDTH / 2, y, key)
+          .setDisplaySize(50, 50)
+          .setDepth(5);
+      })
+      .catch(() => {
+        if (!this.scene.isActive('GameOverScene')) return;
+        this.textures.addBase64(key, avatar);
+        this.avatarImg = this.add.image(GAME_WIDTH / 2, y, key)
+          .setDisplaySize(50, 50)
+          .setDepth(5);
+      });
+
+    return ring;
   }
 
   createMessageField(x, y, placeholder) {
-    const canvas = this.game.canvas;
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = rect.width / GAME_WIDTH;
-    const scaleY = rect.height / GAME_HEIGHT;
     const input = document.createElement('input');
     input.type = 'text';
     input.placeholder = placeholder;
     input.maxLength = 80;
-    input.style.cssText = `
-      position: absolute;
-      left: ${rect.left + (x - 150) * scaleX}px;
-      top: ${rect.top + (y - 14) * scaleY}px;
-      width: ${300 * scaleX}px;
-      height: ${28 * scaleY}px;
-      background: rgba(0, 103, 177, 0.6);
-      border: 1px solid rgba(0, 148, 219, 0.5);
-      border-radius: 8px;
-      color: #fff;
-      font-family: Inter, sans-serif;
-      font-size: ${11 * scaleY}px;
-      padding: 0 10px;
-      outline: none;
-      text-align: center;
-      z-index: 10;
-    `;
+    input.className = 'game-overlay-input';
     document.body.appendChild(input);
-    this.events.on('shutdown', () => input.remove());
+    this.messageFieldPos = { x, y };
+    this.repositionMessageField();
     this.events.on('destroy', () => input.remove());
     return input;
+  }
+
+  repositionMessageField() {
+    if (!this.messageInput || !this.messageFieldPos) return;
+    const canvas = this.game.canvas;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = rect.width / GAME_WIDTH;
+    const scaleY = rect.height / GAME_HEIGHT;
+    const { x, y } = this.messageFieldPos;
+    this.messageInput.style.left = `${rect.left + (x - 140) * scaleX}px`;
+    this.messageInput.style.top = `${rect.top + (y - 14) * scaleY}px`;
+    this.messageInput.style.width = `${280 * scaleX}px`;
+    this.messageInput.style.height = `${30 * scaleY}px`;
+    this.messageInput.style.fontSize = `${12 * scaleY}px`;
   }
 
   saveMessageIfAny() {
@@ -186,12 +220,13 @@ export class GameOverScene extends Phaser.Scene {
       return;
     }
     if (!isFirebaseConfigured()) {
-      this.statusText.setText('Firebase not configured. See firebase.js');
-      this.statusText.setColor('#e74c3c');
+      this.statusText.setText('Firebase not configured — score saved locally only.');
+      this.statusText.setColor('#f39c12');
       return;
     }
 
     this.statusText.setText('Submitting...');
+    this.statusText.setColor(COLORS.textMuted);
     const modeInfo = Object.values(MODES).find((m) => m.id === this.mode);
 
     const id = await submitScore({

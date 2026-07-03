@@ -26,7 +26,7 @@ export class HallOfFameScene extends Phaser.Scene {
     }).setOrigin(0.5).setShadow(0, 0, '#ffd700', 6, true, true);
 
     this.add.text(GAME_WIDTH / 2, 125, 'CST Silver Jubilee Legends', {
-      fontFamily: 'Inter', fontSize: '11px', color: COLORS.textMuted,
+      fontFamily: 'Inter', fontSize: '13px', color: COLORS.textMuted,
     }).setOrigin(0.5);
 
     this.contentY = 155;
@@ -35,15 +35,14 @@ export class HallOfFameScene extends Phaser.Scene {
     // Achievements row
     const unlocked = getUnlockedAchievements();
     this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 130, '🏅 Your Badges', {
-      fontFamily: 'Orbitron', fontSize: '12px', color: COLORS.silver,
+      fontFamily: 'Orbitron', fontSize: '14px', color: COLORS.silver,
     }).setOrigin(0.5);
 
     const badgeText = unlocked.length > 0
       ? unlocked.map((id) => ACHIEVEMENTS[id]?.emoji || '🏅').join(' ')
       : 'Play to earn badges!';
     this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 105, badgeText, {
-      fontFamily: 'Inter', fontSize: unlocked.length > 0 ? '20px' : '12px',
-      color: COLORS.textMuted,
+      fontFamily: 'Inter', fontSize: unlocked.length > 0 ? '22px' : '14px', color: COLORS.textMuted,
     }).setOrigin(0.5);
 
     UIHelper.createButton(this, GAME_WIDTH / 2, GAME_HEIGHT - 50, '←  BACK', () => {
@@ -122,7 +121,7 @@ export class HallOfFameScene extends Phaser.Scene {
 
   addSectionTitle(y, text) {
     this.add.text(GAME_WIDTH / 2, y, text, {
-      fontFamily: 'Orbitron', fontSize: '13px', color: COLORS.gold, fontStyle: 'bold',
+      fontFamily: 'Orbitron', fontSize: '15px', color: COLORS.gold, fontStyle: 'bold',
     }).setOrigin(0.5);
   }
 
@@ -130,10 +129,10 @@ export class HallOfFameScene extends Phaser.Scene {
     const bg = this.add.rectangle(GAME_WIDTH / 2, y, GAME_WIDTH - 50, 36, 0xffffff, 0.12)
       .setStrokeStyle(1, 0xffd700, 0.35);
     this.add.text(GAME_WIDTH / 2, y - 8, name, {
-      fontFamily: 'Orbitron', fontSize: '14px', color: COLORS.white, fontStyle: 'bold',
+      fontFamily: 'Orbitron', fontSize: '16px', color: COLORS.white, fontStyle: 'bold',
     }).setOrigin(0.5).setShadow(0, 0, '#ffd700', 4, true, true);
     this.add.text(GAME_WIDTH / 2, y + 10, detail, {
-      fontFamily: 'Inter', fontSize: '11px', color: COLORS.textMuted,
+      fontFamily: 'Inter', fontSize: '13px', color: COLORS.textMuted,
     }).setOrigin(0.5);
     this.tweens.add({ targets: bg, alpha: { from: 0.12, to: 0.22 }, duration: 1500, yoyo: true, repeat: -1 });
   }

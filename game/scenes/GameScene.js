@@ -8,16 +8,29 @@ import {
   JUMP_VELOCITY,
   MAX_FALL_SPEED,
   POWER_UPS,
-  QUIZ_INTERVAL,
   SURPRISE_REWARD_CHANCE,
   ROLES,
+  PLAYER_DISPLAY_SIZE,
+  PLAYER_HIT_RADIUS,
+  PLAYER_START_X,
+  PIPE_WIDTH,
 } from '../config/constants.js';
-import { LEGACY_MOMENTS, CAMPUS_LOCATIONS } from '../data/legacy.js';
+import { CAMPUS_LOCATIONS } from '../data/legacy.js';
 import { getPlayer, getAvatar } from '../utils/storage.js';
 import { buildFaceTexture } from '../utils/avatar.js';
 import { loadOptionalImages } from '../utils/assets.js';
 import { UIHelper } from '../utils/UIHelper.js';
 import { AudioManager } from '../utils/audio.js';
+import {
+  shouldTriggerJourneyQuiz,
+  shouldTriggerDeptQuiz,
+  markJourneyQuizTriggered,
+  getJourneyQuiz,
+  getJourneyTimelineCard,
+  getDeptQuestion,
+  resetJourneyQuizState,
+  resetDeptQuizState,
+} from '../utils/quizEngine.js';
 
 /**
  * GameScene — Core gameplay with quiz triggers and avatar support.
@@ -40,11 +53,12 @@ export class GameScene extends Phaser.Scene {
     this.pipeGap = this.config.initialGap;
     this.pipeTimer = 0;
     this.obstaclesPassed = 0;
-    this.lastQuizAt = 0;
+    this.lastQuizObstacle = 0;
     this.quizStreak = 0;
-    this.legacyTriggered = false;
-    this.legacyShown = [];
     this.intenseBgmStarted = false;
+
+    resetJourneyQuizState();
+    resetDeptQuizState();
 
     this.hasShield = false;
     this.scoreMultiplier = 1;
@@ -80,7 +94,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.campusLabel = this.add.text(GAME_WIDTH / 2, 72, '', {
-      fontFamily: 'Inter', fontSize: '10px', color: 'rgba(255,255,255,0.6)',
+      fontFamily: 'Inter', fontSize: '12px', color: 'rgba(255,255,255,0.6)',
     }).setOrigin(0.5).setDepth(5);
 
     this.pipes = this.physics.add.group();
@@ -95,7 +109,9 @@ export class GameScene extends Phaser.Scene {
 
     this.createPlayerSprite();
 
-    this.shieldFx = this.add.image(this.bird.x, this.bird.y, 'shield_fx').setVisible(false).setDepth(6);
+    this.shieldFx = this.add.image(this.bird.x, this.bird.y, 'shield_fx')
+      .setDisplaySize(PLAYER_DISPLAY_SIZE + 20, PLAYER_DISPLAY_SIZE + 20)
+      .setVisible(false).setDepth(6);
 
     this.physics.add.overlap(this.bird, this.pipes, this.hitPipe, null, this);
     this.physics.add.overlap(this.bird, this.powerUps, this.collectPowerUp, null, this);
@@ -107,11 +123,13 @@ export class GameScene extends Phaser.Scene {
     this.input.on('pointerdown', this._jumpHandler);
     this.input.keyboard?.on('keydown-SPACE', this._jumpHandler);
 
-    const modeTag = this.modeInfo?.hasQuiz
-      ? (this.mode === 'journey' ? '🎓 CST Quiz Mode' : `🧠 ${this.player?.department || 'Dept'} Quiz`)
-      : '📚 Classic Mode — No Quizzes';
+    const modeTag = this.modeInfo?.classic
+      ? '🛩️ Classic Flappy — Just Fly'
+      : this.mode === 'journey'
+        ? '🏛️ CST trivia at 5, 15 & 25 pts'
+        : `🎯 ${this.player?.department || 'Dept'} — surprise quizzes!`;
     this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 95, modeTag, {
-      fontFamily: 'Inter', fontSize: '10px', color: 'rgba(255,255,255,0.55)',
+      fontFamily: 'Inter', fontSize: '12px', color: 'rgba(255,255,255,0.55)',
     }).setOrigin(0.5).setDepth(20);
 
     this.readyText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 50, 'Tap or Press SPACE\nto Start', {
@@ -125,8 +143,7 @@ export class GameScene extends Phaser.Scene {
     });
 
     // Quiz completion handler
-    this.events.on('quizComplete', ({ correct, bonus, speedPenalty, streakBonus }) => {
-      this.isPaused = false;
+    this.events.on('quizComplete', ({ correct, bonus, speedPenalty, streakBonus, showTimeline, timelineIndex }) => {
       if (correct) {
         this.quizStreak++;
         this.addScore(bonus + (streakBonus || 0));
@@ -142,6 +159,16 @@ export class GameScene extends Phaser.Scene {
         this.cameras.main.flash(200, 231, 76, 60, false);
         AudioManager.play(this, 'wrong');
       }
+
+      if (showTimeline && timelineIndex != null) {
+        const card = getJourneyTimelineCard(timelineIndex);
+        if (card) {
+          this.triggerTimelineCard(card);
+          return;
+        }
+      }
+
+      this.isPaused = false;
       this.physics.resume();
     });
 
@@ -173,28 +200,33 @@ export class GameScene extends Phaser.Scene {
     const faceKey = 'player_face';
     if (this.textures.exists(faceKey)) this.textures.remove(faceKey);
 
-    this.bird = this.physics.add.sprite(100, GAME_HEIGHT / 2, 'logo');
-    this.bird.setDisplaySize(48, 48);
-    this.bird.body.setCircle(22);
-    this.bird.body.setOffset(2, 2);
+    this.bird = this.physics.add.sprite(PLAYER_START_X, GAME_HEIGHT / 2, 'logo');
+    this.bird.setDisplaySize(PLAYER_DISPLAY_SIZE, PLAYER_DISPLAY_SIZE);
+    this.bird.body.setCircle(PLAYER_HIT_RADIUS);
+    this.bird.body.setOffset(
+      (PLAYER_DISPLAY_SIZE - PLAYER_HIT_RADIUS * 2) / 2,
+      (PLAYER_DISPLAY_SIZE - PLAYER_HIT_RADIUS * 2) / 2
+    );
 
-    this.wingBack = this.add.image(this.bird.x - 28, this.bird.y + 2, 'wing')
-      .setDisplaySize(30, 16).setOrigin(1, 0.5).setDepth(4);
-    this.wingFront = this.add.image(this.bird.x + 28, this.bird.y + 2, 'wing')
-      .setDisplaySize(30, 16).setOrigin(0, 0.5).setFlipX(true).setDepth(6);
+    const wingW = Math.round(PLAYER_DISPLAY_SIZE * 0.42);
+    const wingH = Math.round(PLAYER_DISPLAY_SIZE * 0.22);
+    this.wingBack = this.add.image(this.bird.x - PLAYER_DISPLAY_SIZE * 0.55, this.bird.y + 2, 'wing')
+      .setDisplaySize(wingW, wingH).setOrigin(1, 0.5).setDepth(4);
+    this.wingFront = this.add.image(this.bird.x + PLAYER_DISPLAY_SIZE * 0.55, this.bird.y + 2, 'wing')
+      .setDisplaySize(wingW, wingH).setOrigin(0, 0.5).setFlipX(true).setDepth(6);
 
     buildFaceTexture(this, avatar, faceKey)
       .then(() => {
         if (this.bird?.scene) {
           this.bird.setTexture(faceKey);
-          this.bird.setDisplaySize(48, 48);
+          this.bird.setDisplaySize(PLAYER_DISPLAY_SIZE, PLAYER_DISPLAY_SIZE);
         }
       })
       .catch(() => {
         this.textures.addBase64(faceKey, avatar);
         if (this.bird?.scene) {
           this.bird.setTexture(faceKey);
-          this.bird.setDisplaySize(48, 48);
+          this.bird.setDisplaySize(PLAYER_DISPLAY_SIZE, PLAYER_DISPLAY_SIZE);
         }
       });
 
@@ -223,8 +255,9 @@ export class GameScene extends Phaser.Scene {
 
   syncWings() {
     if (!this.wingBack || !this.wingFront || !this.bird) return;
-    this.wingBack.setPosition(this.bird.x - 26, this.bird.y + 2);
-    this.wingFront.setPosition(this.bird.x + 26, this.bird.y + 2);
+    const offset = PLAYER_DISPLAY_SIZE * 0.52;
+    this.wingBack.setPosition(this.bird.x - offset, this.bird.y + 2);
+    this.wingFront.setPosition(this.bird.x + offset, this.bird.y + 2);
   }
 
   createPlayerSprite() {
@@ -235,13 +268,13 @@ export class GameScene extends Phaser.Scene {
       const styleMap = { student: 'bird', lecturer: 'avatar_lecturer', hacker: 'avatar_hacker' };
       const styleId = this.player?.avatarStyle || (this.player?.role === ROLES.LECTURER ? 'lecturer' : 'student');
       const texKey = this.textures.exists(styleMap[styleId]) ? styleMap[styleId] : 'bird';
-      this.bird = this.physics.add.sprite(100, GAME_HEIGHT / 2, texKey);
+      this.bird = this.physics.add.sprite(PLAYER_START_X, GAME_HEIGHT / 2, texKey);
       if (texKey === 'bird') {
         this.bird.body.setSize(32, 26);
         this.bird.body.setOffset(6, 5);
       } else {
-        this.bird.setDisplaySize(48, 48);
-        this.bird.body.setCircle(20);
+        this.bird.setDisplaySize(PLAYER_DISPLAY_SIZE, PLAYER_DISPLAY_SIZE);
+        this.bird.body.setCircle(PLAYER_HIT_RADIUS);
       }
     }
 
@@ -363,11 +396,16 @@ export class GameScene extends Phaser.Scene {
 
     this.pipes.getChildren().forEach((pipe) => {
       pipe.x -= speed;
-      if (!pipe.getData('scored') && pipe.getData('isMarker') && pipe.x + 40 < this.bird.x) {
+      const cap = pipe.getData('cap');
+      if (cap) cap.x = pipe.x;
+      if (!pipe.getData('scored') && pipe.getData('isMarker') && pipe.x + PIPE_WIDTH / 2 < this.bird.x) {
         pipe.setData('scored', true);
         this.onObstaclePassed();
       }
-      if (pipe.x < -100) pipe.destroy();
+      if (pipe.x < -100) {
+        cap?.destroy();
+        pipe.destroy();
+      }
     });
 
     this.powerUps.getChildren().forEach((pu) => {
@@ -392,11 +430,10 @@ export class GameScene extends Phaser.Scene {
 
     this.updateCampusBackground();
     if (this.mode === 'journey') this.updateJourneyBackground();
-    this.checkLegacyMoments();
   }
 
   updateCampusBackground() {
-    if (this.mode === 'journey') return;
+    if (this.mode === 'journey' || this.modeInfo?.classic) return;
 
     let era = 0;
     for (let i = JOURNEY_MILESTONES.length - 1; i >= 0; i--) {
@@ -416,21 +453,10 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  checkLegacyMoments() {
-    if (this.isPaused || this.isGameOver) return;
-    LEGACY_MOMENTS.forEach((moment) => {
-      if (this.score >= moment.score && !this.legacyShown.includes(moment.score)) {
-        this.legacyShown.push(moment.score);
-        this.legacyTriggered = true;
-        this.triggerLegacy(moment);
-      }
-    });
-  }
-
-  triggerLegacy(moment) {
+  triggerTimelineCard(card) {
     this.isPaused = true;
     this.physics.pause();
-    this.scene.launch('LegacyScene', { moment });
+    this.scene.launch('LegacyScene', { moment: card, isTimeline: true });
     this.scene.pause();
   }
 
@@ -445,17 +471,24 @@ export class GameScene extends Phaser.Scene {
       this.pipeGap = Math.max(this.config.minGap, this.config.initialGap - this.obstaclesPassed * 0.8);
     }
 
-    if (Math.random() < SURPRISE_REWARD_CHANCE) {
+    if (!this.modeInfo?.classic && Math.random() < SURPRISE_REWARD_CHANCE) {
       this.triggerSurpriseReward();
     }
 
+    if (!this.modeInfo?.hasQuiz || this.isPaused) return;
+
+    if (this.mode === 'journey' && shouldTriggerJourneyQuiz(this.score)) {
+      markJourneyQuizTriggered(this.score);
+      this.lastQuizObstacle = this.obstaclesPassed;
+      this.triggerQuiz(this.score);
+      return;
+    }
+
     if (
-      this.modeInfo?.hasQuiz &&
-      this.obstaclesPassed > 0 &&
-      this.obstaclesPassed % QUIZ_INTERVAL === 0 &&
-      this.lastQuizAt !== this.obstaclesPassed
+      this.mode === 'department' &&
+      shouldTriggerDeptQuiz(this.score, this.obstaclesPassed, this.lastQuizObstacle)
     ) {
-      this.lastQuizAt = this.obstaclesPassed;
+      this.lastQuizObstacle = this.obstaclesPassed;
       this.triggerQuiz();
     }
   }
@@ -472,17 +505,53 @@ export class GameScene extends Phaser.Scene {
     AudioManager.play(this, 'powerup');
   }
 
-  triggerQuiz() {
+  triggerQuiz(triggerScore = null) {
     this.isPaused = true;
     this.physics.pause();
 
-    const quizCategory = this.mode === 'journey' ? 'CST' : this.player?.department || 'IT';
+    let question = null;
+    let timelineIndex = null;
+    let difficulty = 'easy';
+    let quizCategory = 'department';
+    const department = this.player?.department || 'IT';
+
+    if (this.mode === 'journey' && triggerScore != null) {
+      const journeyData = getJourneyQuiz(triggerScore);
+      if (!journeyData) {
+        this.isPaused = false;
+        this.physics.resume();
+        return;
+      }
+      question = journeyData.question;
+      timelineIndex = journeyData.quizIndex;
+      quizCategory = 'CST';
+      difficulty = 'history';
+    } else if (this.mode === 'department') {
+      const deptData = getDeptQuestion(department, this.score);
+      if (!deptData) {
+        this.isPaused = false;
+        this.physics.resume();
+        return;
+      }
+      question = deptData.question;
+      difficulty = deptData.difficulty;
+      quizCategory = 'department';
+    } else {
+      this.isPaused = false;
+      this.physics.resume();
+      return;
+    }
 
     this.scene.launch('QuizScene', {
-      quizCategory: this.mode === 'journey' ? 'CST' : 'department',
-      department: this.player?.department || 'IT',
+      mode: this.mode,
+      quizCategory,
+      department,
+      score: this.score,
       obstacleCount: this.obstaclesPassed,
       quizStreak: this.quizStreak,
+      question,
+      difficulty,
+      timelineIndex,
     });
     this.scene.pause();
   }
@@ -497,19 +566,25 @@ export class GameScene extends Phaser.Scene {
 
     const topH = gapCenter - this.pipeGap / 2;
     const topPipe = this.pipes.create(GAME_WIDTH + 50, topH / 2, pipeKey);
-    topPipe.setDisplaySize(80, topH);
-    topPipe.body.setSize(70, topH);
+    topPipe.setDisplaySize(PIPE_WIDTH, topH);
+    topPipe.body.setSize(PIPE_WIDTH - 10, topH);
     topPipe.setDepth(2);
     topPipe.setFlipY(true);
+    const topCap = this.add.image(GAME_WIDTH + 50, topH, 'pipe_cap')
+      .setDisplaySize(PIPE_WIDTH + 8, 34).setDepth(3).setFlipY(true);
+    topPipe.setData('cap', topCap);
 
     const bottomY = gapCenter + this.pipeGap / 2;
     const bottomH = GAME_HEIGHT - bottomY - 60;
     const bottomPipe = this.pipes.create(GAME_WIDTH + 50, bottomY + bottomH / 2, pipeKey);
-    bottomPipe.setDisplaySize(80, bottomH);
-    bottomPipe.body.setSize(70, bottomH);
+    bottomPipe.setDisplaySize(PIPE_WIDTH, bottomH);
+    bottomPipe.body.setSize(PIPE_WIDTH - 10, bottomH);
     bottomPipe.setDepth(2);
     bottomPipe.setData('isMarker', true);
     bottomPipe.setData('scored', false);
+    const bottomCap = this.add.image(GAME_WIDTH + 50, bottomY, 'pipe_cap')
+      .setDisplaySize(PIPE_WIDTH + 8, 34).setDepth(3);
+    bottomPipe.setData('cap', bottomCap);
 
     const emojiMap = { book: '📚', exam: '📝', assignment: '📋' };
     const label = this.add.text(GAME_WIDTH + 50, gapCenter - this.pipeGap / 2 - 20, emojiMap[obstacleType] || '📚', {
@@ -568,7 +643,20 @@ export class GameScene extends Phaser.Scene {
       case 'wifi':
         this.pipes.getChildren().forEach((pipe) => {
           if (pipe.x > this.bird.x - 50 && pipe.x < this.bird.x + 300) {
-            this.tweens.add({ targets: pipe, alpha: 0, scaleX: 0, duration: 200, onComplete: () => pipe.destroy() });
+            const cap = pipe.getData('cap');
+            this.tweens.add({
+              targets: pipe,
+              alpha: 0,
+              scaleX: 0,
+              duration: 200,
+              onComplete: () => {
+                cap?.destroy();
+                pipe.destroy();
+              },
+            });
+            if (cap) {
+              this.tweens.add({ targets: cap, alpha: 0, scaleX: 0, duration: 200 });
+            }
           }
         });
         this.cameras.main.flash(200, 46, 204, 113, false);
@@ -605,6 +693,7 @@ export class GameScene extends Phaser.Scene {
       this.hasShield = false;
       this.shieldFx.setVisible(false);
       this.tweens.killTweensOf(this.shieldFx);
+      pipe.getData('cap')?.destroy();
       pipe.destroy();
       return;
     }

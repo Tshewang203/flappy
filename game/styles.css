@@ -25,29 +25,64 @@ html, body {
   min-height: 100%;
   width: auto;
   height: auto;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) scale(1.08);
   object-fit: cover;
   z-index: 0;
   display: none;
   filter: brightness(0.92) saturate(1.08);
+  will-change: auto;
+  backface-visibility: hidden;
+}
+
+/* Subtle Ken Burns zoom-out when video scenes are active */
+body.video-active #campus-video {
+  animation: campus-video-zoom-out 14s ease-out forwards;
+}
+
+@keyframes campus-video-zoom-out {
+  from {
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+  to {
+    transform: translate(-50%, -50%) scale(1);
+  }
 }
 
 #game-container {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: fixed;
+  inset: 0;
   width: 100%;
   height: 100%;
+  overflow: hidden;
+  z-index: 1;
   pointer-events: none;
 }
 
 #game-container canvas {
   display: block;
-  border-radius: 12px;
+  margin: 0 auto;
   pointer-events: auto;
-  filter: drop-shadow(0 0 14px rgba(0, 0, 0, 0.55));
+}
+
+/* HTML inputs overlaid on the Phaser canvas (player info, game over message) */
+.game-overlay-input {
+  position: fixed;
+  background: rgba(0, 103, 177, 0.75);
+  border: 1px solid rgba(0, 148, 219, 0.55);
+  border-radius: 8px;
+  color: #fff;
+  font-family: Inter, sans-serif;
+  padding: 0 10px;
+  outline: none;
+  text-align: center;
+  z-index: 5;
+  pointer-events: auto;
+  box-sizing: border-box;
+}
+
+.game-overlay-input.player-name-input {
+  background: rgba(80, 170, 230, 0.55);
+  border: 1px solid rgba(140, 210, 255, 0.6);
 }
 
 /* Transparent canvas — video visible through UI scenes */
@@ -61,6 +96,8 @@ body.video-active #game-container canvas {
 }
 
 #loading-screen {
+  position: fixed;
+  inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -70,9 +107,9 @@ body.video-active #game-container canvas {
   font-family: 'Orbitron', sans-serif;
   font-size: 14px;
   letter-spacing: 2px;
-  position: relative;
-  z-index: 2;
+  z-index: 10;
   pointer-events: none;
+  background: #004f8a;
 }
 
 .loader-ring {
@@ -130,6 +167,10 @@ body.video-active #game-container canvas {
   margin: 0 auto 16px;
   display: block;
   background: #1e3a5f;
+}
+
+.avatar-video {
+  transform: scaleX(-1);
 }
 
 .avatar-error {

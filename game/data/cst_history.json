@@ -1,0 +1,86 @@
+{
+  "title": "CST Silver Jubilee Timeline",
+  "description": "Ordered institutional milestones — quizzes and timeline cards follow this sequence only.",
+  "timeline": [
+    {
+      "order": 1,
+      "triggerScore": 5,
+      "year": "2001",
+      "title": "CST Founded",
+      "description": "The College of Science and Technology is established under the Royal University of Bhutan, beginning its mission to advance science and technology education.",
+      "emoji": "🏛️",
+      "location": "Rinchending, Phuentsholing",
+      "question": {
+        "type": "multiple_choice",
+        "q": "In which year was the College of Science and Technology (CST) founded?",
+        "options": ["1998", "2001", "2005", "2010"],
+        "answer": 1
+      }
+    },
+    {
+      "order": 2,
+      "triggerScore": 15,
+      "year": "2014",
+      "title": "Academic Expansion",
+      "description": "CST expands its academic programs and strengthens affiliations, adding new engineering disciplines and modern laboratory facilities across campus.",
+      "emoji": "📈",
+      "location": "CST Campus, Phuentsholing",
+      "question": {
+        "type": "year_match",
+        "q": "Match the year: CST undergoes major academic expansion with new programs and upgraded labs.",
+        "options": ["2008", "2011", "2014", "2018"],
+        "answer": 2
+      }
+    },
+    {
+      "order": 3,
+      "triggerScore": 25,
+      "year": "2026",
+      "title": "Silver Jubilee",
+      "description": "CST celebrates 25 years of excellence — honoring its legacy of learning, innovation, and community impact across Bhutan.",
+      "emoji": "🥈",
+      "location": "CST Silver Jubilee Plaza",
+      "question": {
+        "type": "multiple_choice",
+        "q": "CST's Silver Jubilee celebrates how many years of institutional excellence?",
+        "options": ["20 years", "25 years", "30 years", "50 years"],
+        "answer": 1
+      }
+    }
+  ],
+  "facts": [
+    {
+      "type": "multiple_choice",
+      "q": "What does CST stand for?",
+      "options": [
+        "College of Science and Technology",
+        "Center for Software Training",
+        "College of Systems and Telecom",
+        "Campus of Science and Tech"
+      ],
+      "answer": 0
+    },
+    {
+      "type": "multiple_choice",
+      "q": "CST is affiliated with which national university body?",
+      "options": [
+        "Royal University of Bhutan",
+        "Bhutan Board of Education",
+        "Asian Institute of Technology",
+        "UNESCO Regional Centre"
+      ],
+      "answer": 0
+    },
+    {
+      "type": "multiple_choice",
+      "q": "CST primarily focuses on education in which fields?",
+      "options": [
+        "Science and Technology",
+        "Law and Governance",
+        "Medicine and Nursing",
+        "Fine Arts only"
+      ],
+      "answer": 0
+    }
+  ]
+}

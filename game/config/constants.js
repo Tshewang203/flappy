@@ -1,7 +1,16 @@
 // Shared game constants and configuration
 
-export const GAME_WIDTH = 480;
+export const GAME_WIDTH = 1280;
 export const GAME_HEIGHT = 720;
+
+/** Canvas zoom — slightly below 1 so the UI doesn't feel cramped on screen */
+export const GAME_SCALE_ZOOM = 0.92;
+
+/** On-screen player avatar size (pixels) */
+export const PLAYER_DISPLAY_SIZE = 76;
+export const PLAYER_HIT_RADIUS = 34;
+export const PLAYER_START_X = 270;
+export const PIPE_WIDTH = 88;
 
 export const GAME_TITLE = 'CST Silver Flight';
 export const GAME_TAGLINE = 'Learn • Play • Compete';
@@ -36,20 +45,25 @@ export const MODES = {
   FLAPPY_CST: {
     id: 'flappy_cst',
     name: 'Flappy CST',
-    subtitle: 'Classic Mode',
+    subtitle: 'Classic Flappy Bird',
     color: 0x2ecc71,
-    emoji: '📚',
-    description: 'Pure gameplay — no interruptions',
+    emoji: '🛩️',
+    icon: '🛩️',
+    iconBadge: '💨',
+    description: 'Tap, flap, survive.',
     hasQuiz: false,
+    classic: true,
     leaderboardType: 'global',
   },
   JOURNEY: {
     id: 'journey',
     name: '25 Years Journey',
-    subtitle: 'CST Quiz Mode',
+    subtitle: 'CST History Trail',
     color: 0x9b59b6,
-    emoji: '🎓',
-    description: 'CST history quizzes every 15 obstacles',
+    emoji: '🏛️',
+    icon: '🏛️',
+    iconBadge: '✨',
+    description: 'CST history at 5, 15 & 25 pts.',
     hasQuiz: true,
     quizCategory: 'CST',
     leaderboardType: 'global',
@@ -57,23 +71,29 @@ export const MODES = {
   DEPARTMENT: {
     id: 'department',
     name: 'Department Challenge',
-    subtitle: 'Department Quiz Mode',
+    subtitle: 'Your Dept, Your Quiz',
     color: 0x3498db,
-    emoji: '🧠',
-    description: 'Department-specific quizzes every 15 obstacles',
+    emoji: '🎯',
+    icon: '🎯',
+    iconBadge: '🔥',
+    description: 'Random dept quizzes, scaled difficulty.',
     hasQuiz: true,
     quizCategory: 'department',
     leaderboardType: 'department',
   },
 };
 
-// Quiz settings
-export const QUIZ_INTERVAL = 15;
-export const QUIZ_BONUS = 10;
+// Quiz settings — Journey: fixed score milestones; Dept: random probability (see quizEngine.js)
+export const JOURNEY_QUIZ_SCORES = [5, 15, 25];
+export const QUIZ_BONUS = 3;
 export const QUIZ_PENALTY = 5;
 export const QUIZ_TIMER_SECONDS = 10;
 export const QUIZ_STREAK_BONUS = 5;
 export const QUIZ_STREAK_THRESHOLD = 3;
+
+// Department mode random quiz tuning
+export const DEPT_QUIZ_MIN_OBSTACLES = 8;
+export const DEPT_QUIZ_COOLDOWN = 5;
 
 // Surprise reward chance (0–1)
 export const SURPRISE_REWARD_CHANCE = 0.04;
@@ -95,7 +115,7 @@ export const MODE_CONFIG = {
     initialGap: 200,
     minGap: 130,
     spawnInterval: 2200,
-    powerUpChance: 0.15,
+    powerUpChance: 0,
     obstacles: ['book', 'exam', 'assignment'],
   },
   journey: {

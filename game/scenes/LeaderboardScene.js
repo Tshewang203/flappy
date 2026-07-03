@@ -50,7 +50,7 @@ export class LeaderboardScene extends Phaser.Scene {
     this.deptLabel = this.add
       .text(GAME_WIDTH / 2, 175, '', {
         fontFamily: 'Inter',
-        fontSize: '12px',
+        fontSize: '13px',
         color: COLORS.textMuted,
       })
       .setOrigin(0.5);
@@ -60,7 +60,7 @@ export class LeaderboardScene extends Phaser.Scene {
     this.statusText = this.add
       .text(GAME_WIDTH / 2, 280, 'Loading...', {
         fontFamily: 'Inter',
-        fontSize: '14px',
+        fontSize: '15px',
         color: COLORS.textMuted,
       })
       .setOrigin(0.5);
@@ -98,7 +98,7 @@ export class LeaderboardScene extends Phaser.Scene {
       this.add
         .text(x, y, shortName, {
           fontFamily: 'Inter',
-          fontSize: '10px',
+          fontSize: '12px',
           color: isActive ? COLORS.gold : COLORS.textMuted,
         })
         .setOrigin(0.5);
@@ -187,7 +187,7 @@ export class LeaderboardScene extends Phaser.Scene {
         this.add
           .text(cols[i], headerY, h, {
             fontFamily: 'Orbitron',
-            fontSize: '10px',
+            fontSize: '12px',
             color: COLORS.silver,
             fontStyle: 'bold',
           })
@@ -201,7 +201,7 @@ export class LeaderboardScene extends Phaser.Scene {
 
       this.entriesContainer.add(
         this.add.text(-175, rowY, `${idx + 1}.`, {
-          fontFamily: 'Orbitron', fontSize: '11px', color: rankColor,
+          fontFamily: 'Orbitron', fontSize: '13px', color: rankColor,
         }).setOrigin(0, 0.5)
       );
 
@@ -217,7 +217,7 @@ export class LeaderboardScene extends Phaser.Scene {
       ].forEach((col, i) => {
         this.entriesContainer.add(
           this.add.text(col.x, rowY, col.t, {
-            fontFamily: 'Inter', fontSize: '11px', color: COLORS.text,
+            fontFamily: 'Inter', fontSize: '13px', color: COLORS.text,
           }).setOrigin(i === 3 ? 1 : 0, 0.5)
         );
       });

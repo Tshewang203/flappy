@@ -17,9 +17,19 @@ export const VIDEO_SCENES = [
 export class UIHelper {
   static showVideo(show) {
     const video = document.getElementById('campus-video');
-    if (video) {
-      video.style.display = show ? 'block' : 'none';
-      if (show) video.play().catch(() => {});
+    if (!video) return;
+
+    if (show) {
+      video.style.display = 'block';
+      // Restart zoom-out animation without layout thrash
+      video.style.animation = 'none';
+      void video.offsetWidth;
+      video.style.animation = '';
+      video.play().catch(() => {});
+    } else {
+      video.style.display = 'none';
+      video.style.animation = 'none';
+      video.pause();
     }
     document.body.classList.toggle('video-active', show);
   }
@@ -45,7 +55,7 @@ export class UIHelper {
     const {
       width = 220,
       height = 52,
-      fontSize = '18px',
+      fontSize = '20px',
       color = COLORS.white,
       depth = 10,
       playSound = true,
@@ -65,7 +75,8 @@ export class UIHelper {
         fontStyle: 'bold',
       })
       .setOrigin(0.5)
-      .setDepth(depth + 1);
+      .setDepth(depth + 1)
+      .setInteractive({ useHandCursor: true });
 
     bg.on('pointerover', () => {
       bg.setFillStyle(0xffffff, 0.22);
@@ -79,14 +90,16 @@ export class UIHelper {
       text.setScale(1);
     });
 
-    const fire = () => {
+    const fire = (pointer, localX, localY, event) => {
       if (scene._navigating) return;
+      event?.stopPropagation?.();
       AudioManager.resume();
       if (playSound) AudioManager.playClick(scene);
       if (typeof callback === 'function') callback();
     };
 
-    bg.on('pointerdown', fire);
+    bg.on('pointerup', fire);
+    text.on('pointerup', fire);
     return { bg, text };
   }
 
@@ -94,7 +107,7 @@ export class UIHelper {
     const title = scene.add
       .text(GAME_WIDTH / 2, y, mainText, {
         fontFamily: 'Orbitron',
-        fontSize: '28px',
+        fontSize: '30px',
         color: COLORS.white,
         fontStyle: 'bold',
         align: 'center',
@@ -107,10 +120,10 @@ export class UIHelper {
     let subtitle = null;
     if (subText) {
       subtitle = scene.add
-        .text(GAME_WIDTH / 2, y + 40, subText, {
+        .text(GAME_WIDTH / 2, y + 44, subText, {
           fontFamily: 'Inter',
-          fontSize: '14px',
-          color: 'rgba(255,255,255,0.85)',
+          fontSize: '16px',
+          color: 'rgba(255,255,255,0.9)',
           align: 'center',
         })
         .setOrigin(0.5)
@@ -166,8 +179,11 @@ export class UIHelper {
   static fadeToScene(scene, targetScene, data = {}, duration = 250) {
     if (scene._navigating) return;
     scene._navigating = true;
+    AudioManager.resume();
 
-    if (!VIDEO_SCENES.includes(targetScene)) {
+    if (VIDEO_SCENES.includes(targetScene)) {
+      UIHelper.showVideo(true);
+    } else {
       UIHelper.showVideo(false);
     }
 

@@ -2,7 +2,7 @@ import { GAME_WIDTH, GAME_HEIGHT, COLORS } from '../config/constants.js';
 import { AudioManager } from '../utils/audio.js';
 
 /**
- * LegacyScene — CST timeline slide overlay at score milestones.
+ * LegacyScene — Chronological CST timeline card (shown after Journey quizzes).
  */
 export class LegacyScene extends Phaser.Scene {
   constructor() {
@@ -11,6 +11,7 @@ export class LegacyScene extends Phaser.Scene {
 
   init(data) {
     this.moment = data.moment;
+    this.isTimeline = data.isTimeline || false;
   }
 
   create() {
@@ -21,15 +22,21 @@ export class LegacyScene extends Phaser.Scene {
 
     const cardY = GAME_HEIGHT / 2;
 
-    // Silver glow border
-    this.add.rectangle(GAME_WIDTH / 2, cardY, GAME_WIDTH - 30, 380, 0x0067b1, 0.6)
+    this.add.rectangle(GAME_WIDTH / 2, cardY, GAME_WIDTH - 30, 400, 0x0067b1, 0.6)
       .setStrokeStyle(3, 0xffd700, 0.8).setDepth(1);
 
-    this.add.text(GAME_WIDTH / 2, cardY - 150, '✦ CST LEGACY MOMENT ✦', {
+    const header = this.isTimeline ? '✦ CST TIMELINE ✦' : '✦ CST LEGACY MOMENT ✦';
+    this.add.text(GAME_WIDTH / 2, cardY - 165, header, {
       fontFamily: 'Orbitron', fontSize: '16px', color: COLORS.gold, fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(2);
 
-    this.add.text(GAME_WIDTH / 2, cardY - 100, this.moment.emoji, { fontSize: '56px' })
+    if (this.moment.sequenceLabel) {
+      this.add.text(GAME_WIDTH / 2, cardY - 138, this.moment.sequenceLabel, {
+        fontFamily: 'Orbitron', fontSize: '13px', color: COLORS.silver,
+      }).setOrigin(0.5).setDepth(2);
+    }
+
+    this.add.text(GAME_WIDTH / 2, cardY - 95, this.moment.emoji, { fontSize: '56px' })
       .setOrigin(0.5).setDepth(2);
 
     this.add.text(GAME_WIDTH / 2, cardY - 35, this.moment.year, {
@@ -40,12 +47,18 @@ export class LegacyScene extends Phaser.Scene {
       fontFamily: 'Orbitron', fontSize: '22px', color: COLORS.white, fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(2);
 
-    this.add.text(GAME_WIDTH / 2, cardY + 70, this.moment.description, {
+    if (this.moment.location) {
+      this.add.text(GAME_WIDTH / 2, cardY + 48, `📍 ${this.moment.location}`, {
+        fontFamily: 'Inter', fontSize: '12px', color: COLORS.silver,
+      }).setOrigin(0.5).setDepth(2);
+    }
+
+    this.add.text(GAME_WIDTH / 2, cardY + 78, this.moment.description, {
       fontFamily: 'Inter', fontSize: '14px', color: COLORS.textMuted,
       wordWrap: { width: GAME_WIDTH - 70 }, align: 'center',
     }).setOrigin(0.5).setDepth(2);
 
-    const continueText = this.add.text(GAME_WIDTH / 2, cardY + 155, 'Tap to continue ▶', {
+    const continueText = this.add.text(GAME_WIDTH / 2, cardY + 165, 'Tap to continue ▶', {
       fontFamily: 'Orbitron', fontSize: '14px', color: COLORS.silver,
     }).setOrigin(0.5).setDepth(2);
 
@@ -53,8 +66,7 @@ export class LegacyScene extends Phaser.Scene {
       targets: continueText, alpha: { from: 0.5, to: 1 }, duration: 700, yoyo: true, repeat: -1,
     });
 
-    // Keep the milestone visible for 3 seconds (auto-allow closing after 3s).
-    this.time.delayedCall(3000, () => {
+    this.time.delayedCall(2500, () => {
       this.input.once('pointerdown', () => this.close());
       this.input.keyboard?.once('keydown-SPACE', () => this.close());
     });
