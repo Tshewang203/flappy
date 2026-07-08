@@ -56,14 +56,45 @@ export class UIHelper {
       width = 220,
       height = 52,
       fontSize = '20px',
-      color = COLORS.white,
+      color = COLORS.gold,
       depth = 10,
       playSound = true,
+      style = 'default', // 'default', 'primary', 'secondary'
     } = options;
 
+    // Style configurations
+    const styleConfigs = {
+      default: { 
+        fillColor: 0xffffff, 
+        fillAlpha: 0.12, 
+        strokeColor: 0xffffff, 
+        strokeAlpha: 0.45,
+        hoverFill: 0xffffff,
+        hoverAlpha: 0.22,
+      },
+      primary: { 
+        fillColor: 0x0094db, 
+        fillAlpha: 0.35, 
+        strokeColor: COLORS.gold, 
+        strokeAlpha: 0.8,
+        hoverFill: 0x0094db,
+        hoverAlpha: 0.55,
+      },
+      secondary: { 
+        fillColor: 0x00aa77, 
+        fillAlpha: 0.25, 
+        strokeColor: 0x00ff88, 
+        strokeAlpha: 0.6,
+        hoverFill: 0x00aa77,
+        hoverAlpha: 0.45,
+      },
+    };
+
+    const config = styleConfigs[style] || styleConfigs.default;
+
     const bg = scene.add
-      .rectangle(x, y, width, height, 0xffffff, 0.12)
-      .setStrokeStyle(2, 0xffffff, 0.45)
+      .rectangle(x, y, width, height, config.fillColor, config.fillAlpha)
+      .setStrokeStyle(2, config.strokeColor, config.strokeAlpha)
       .setInteractive({ useHandCursor: true })
       .setDepth(depth);
 
@@ -78,16 +109,22 @@ export class UIHelper {
       .setDepth(depth + 1)
       .setInteractive({ useHandCursor: true });
 
+    // Add glow effect on hover
+    const glowShadow = scene.make.graphics({ x: 0, y: 0, add: false });
+    glowShadow.setDepth(depth - 1);
+
     bg.on('pointerover', () => {
-      bg.setFillStyle(0xffffff, 0.22);
-      bg.setScale(1.04);
-      text.setScale(1.04);
+      bg.setFillStyle(config.hoverFill, config.hoverAlpha);
+      bg.setScale(1.06);
+      text.setScale(1.06);
+      text.setColor(COLORS.gold);
     });
 
     bg.on('pointerout', () => {
-      bg.setFillStyle(0xffffff, 0.12);
+      bg.setFillStyle(config.fillColor, config.fillAlpha);
       bg.setScale(1);
       text.setScale(1);
+      text.setColor(color);
     });
 
     const fire = (pointer, localX, localY, event) => {
@@ -104,31 +141,40 @@ export class UIHelper {
   }
 
   static createTitle(scene, y, mainText, subText = '', depth = 10) {
+    // Title background glow
+    scene.add
+      .rectangle(GAME_WIDTH / 2, y + 8, GAME_WIDTH - 40, 100, 0x0094db, 0.08)
+      .setDepth(depth - 1)
+      .setAlpha(0.5);
+
     const title = scene.add
       .text(GAME_WIDTH / 2, y, mainText, {
         fontFamily: 'Orbitron',
-        fontSize: '30px',
-        color: COLORS.white,
+        fontSize: '32px',
+        color: COLORS.gold,
         fontStyle: 'bold',
         align: 'center',
         wordWrap: { width: GAME_WIDTH - 40 },
+        stroke: '#0067B1',
+        strokeThickness: 3,
       })
       .setOrigin(0.5)
       .setDepth(depth)
-      .setShadow(0, 2, '#000000', 8, true, true);
+      .setShadow(0, 3, '#000000', 10, true, true);
 
     let subtitle = null;
     if (subText) {
       subtitle = scene.add
-        .text(GAME_WIDTH / 2, y + 44, subText, {
+        .text(GAME_WIDTH / 2, y + 48, subText, {
           fontFamily: 'Inter',
           fontSize: '16px',
-          color: 'rgba(255,255,255,0.9)',
+          color: COLORS.silver,
           align: 'center',
+          fontStyle: 'bold',
         })
         .setOrigin(0.5)
         .setDepth(depth)
-        .setShadow(0, 1, '#000000', 4, true, true);
+        .setShadow(0, 2, '#000000', 5, true, true);
     }
 
     return { title, subtitle };
@@ -160,6 +206,27 @@ export class UIHelper {
         },
       });
     }
+  }
+
+  static createCard(scene, x, y, width, height, depth = 2) {
+    const card = scene.add
+      .rectangle(x, y, width, height, 0x0067b1, 0.25)
+      .setStrokeStyle(2, COLORS.gold, 0.5)
+      .setDepth(depth);
+    return card;
+  }
+
+  static createSectionLabel(scene, x, y, text, depth = 10) {
+    return scene.add
+      .text(x, y, text, {
+        fontFamily: 'Orbitron',
+        fontSize: '13px',
+        color: COLORS.silver,
+        fontStyle: 'bold',
+      })
+      .setOrigin(0.5)
+      .setDepth(depth)
+      .setShadow(0, 1, '#000', 3, true, true);
   }
 
   static goToScene(scene, targetScene, data = {}) {
