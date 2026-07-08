@@ -86,7 +86,7 @@ export const MODES = {
 // Quiz settings — Journey: fixed score milestones; Dept: random probability (see quizEngine.js)
 export const JOURNEY_QUIZ_SCORES = [5, 15, 25];
 export const QUIZ_BONUS = 3;
-export const QUIZ_PENALTY = 5;
+export const QUIZ_PENALTY = 3;
 export const QUIZ_TIMER_SECONDS = 10;
 export const QUIZ_STREAK_BONUS = 5;
 export const QUIZ_STREAK_THRESHOLD = 3;
