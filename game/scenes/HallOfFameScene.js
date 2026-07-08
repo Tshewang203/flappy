@@ -1,11 +1,12 @@
-import { GAME_WIDTH, GAME_HEIGHT, COLORS, MODES, DEPARTMENTS, ROLES } from '../config/constants.js';
-import { getPlayer, getBestScores } from '../utils/storage.js';
-import { getUnlockedAchievements, ACHIEVEMENTS } from '../utils/achievements.js';
+import { GAME_WIDTH, GAME_HEIGHT, COLORS, MODES, ROLES } from '../config/constants.js';
+import { getPlayer, getBestScores, getUnlockedAchievements } from '../utils/storage.js';
+import { ACHIEVEMENTS } from '../data/achievements.js';
 import { getLeaderboard, isFirebaseConfigured } from '../firebase.js';
 import { UIHelper } from '../utils/UIHelper.js';
 
 /**
  * HallOfFameScene — Top players, department heroes, lecturers, rising stars.
+ * Enhanced with better styling and visual hierarchy.
  */
 export class HallOfFameScene extends Phaser.Scene {
   constructor() {
@@ -19,31 +20,43 @@ export class HallOfFameScene extends Phaser.Scene {
     UIHelper.fadeIn(this);
 
     const logoKey = this.textures.exists('cst_logo') ? 'cst_logo' : 'logo';
-    this.add.image(GAME_WIDTH / 2, 50, logoKey).setDisplaySize(55, 55);
+    this.add.image(GAME_WIDTH / 2, 45, logoKey).setDisplaySize(50, 50);
 
-    this.add.text(GAME_WIDTH / 2, 95, '🏛️ HALL OF FAME', {
-      fontFamily: 'Orbitron', fontSize: '22px', color: COLORS.gold, fontStyle: 'bold',
-    }).setOrigin(0.5).setShadow(0, 0, '#ffd700', 6, true, true);
+    this.add.text(GAME_WIDTH / 2, 95, '🏛️ HALL OF FAME 🏛️', {
+      fontFamily: 'Orbitron',
+      fontSize: '22px',
+      color: COLORS.gold,
+      fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(5).setShadow(0, 0, '#ffd700', 4, true, true);
 
-    this.add.text(GAME_WIDTH / 2, 125, 'CST Silver Jubilee Legends', {
-      fontFamily: 'Inter', fontSize: '13px', color: COLORS.textMuted,
-    }).setOrigin(0.5);
+    this.add.text(GAME_WIDTH / 2, 120, 'CST Silver Jubilee Legends', {
+      fontFamily: 'Inter',
+      fontSize: '12px',
+      color: COLORS.textMuted,
+    }).setOrigin(0.5).setDepth(5);
 
     this.contentY = 155;
     this.loadHallOfFame();
 
-    // Achievements row
+    // Achievements section
     const unlocked = getUnlockedAchievements();
-    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 130, '🏅 Your Badges', {
-      fontFamily: 'Orbitron', fontSize: '14px', color: COLORS.silver,
-    }).setOrigin(0.5);
+    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 150, '🏅 YOUR ACHIEVEMENTS', {
+      fontFamily: 'Orbitron',
+      fontSize: '12px',
+      color: COLORS.gold,
+      fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(5);
 
     const badgeText = unlocked.length > 0
-      ? unlocked.map((id) => ACHIEVEMENTS[id]?.emoji || '🏅').join(' ')
-      : 'Play to earn badges!';
-    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 105, badgeText, {
-      fontFamily: 'Inter', fontSize: unlocked.length > 0 ? '22px' : '14px', color: COLORS.textMuted,
-    }).setOrigin(0.5);
+      ? unlocked.map((id) => ACHIEVEMENTS[id]?.emoji || '🏅').join('  ')
+      : '🎮 Play to earn badges!';
+
+    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 120, badgeText, {
+      fontFamily: 'Inter',
+      fontSize: unlocked.length > 0 ? '20px' : '12px',
+      color: unlocked.length > 0 ? COLORS.gold : COLORS.textMuted,
+      align: 'center',
+    }).setOrigin(0.5).setDepth(5);
 
     UIHelper.createButton(this, GAME_WIDTH / 2, GAME_HEIGHT - 50, '←  BACK', () => {
       UIHelper.goToScene(this, 'MenuScene');
@@ -59,81 +72,136 @@ export class HallOfFameScene extends Phaser.Scene {
     const topLocal = Object.entries(bests).sort((a, b) => b[1] - a[1])[0];
     if (topLocal) {
       const modeInfo = Object.values(MODES).find((m) => m.id === topLocal[0]);
-      this.addSectionTitle(y, '⭐ Your Best Run');
+      
+      // Section header
+      this.addSectionHeader(y, '⭐ YOUR PERSONAL BEST');
       y += 28;
-      this.addGlowEntry(y, `${modeInfo?.emoji || ''} ${modeInfo?.name || topLocal[0]}`, `Score: ${topLocal[1]}`);
-      y += 40;
+
+      // Best score card
+      const cardBg = this.add.rectangle(GAME_WIDTH / 2, y + 18, GAME_WIDTH - 40, 50, 0xffd700, 0.12)
+        .setStrokeStyle(2, COLORS.gold, 0.5).setDepth(5);
+      
+      this.add.text(GAME_WIDTH / 2 - 70, y + 10, modeInfo?.emoji || '🎮', {
+        fontSize: '24px',
+      }).setOrigin(0.5, 0.5).setDepth(6);
+
+      this.add.text(GAME_WIDTH / 2 - 30, y + 5, modeInfo?.name || topLocal[0], {
+        fontFamily: 'Orbitron',
+        fontSize: '13px',
+        color: COLORS.gold,
+        fontStyle: 'bold',
+      }).setOrigin(0, 0.5).setDepth(6);
+
+      this.add.text(GAME_WIDTH / 2 + 60, y + 15, `${topLocal[1]}`, {
+        fontFamily: 'Orbitron',
+        fontSize: '16px',
+        color: COLORS.gold,
+        fontStyle: 'bold',
+      }).setOrigin(1, 0.5).setDepth(6);
+
+      y += 60;
     }
 
     if (!isFirebaseConfigured()) {
-      this.add.text(GAME_WIDTH / 2, y + 20, 'Connect Firebase for\nlive Hall of Fame data', {
-        fontFamily: 'Inter', fontSize: '12px', color: COLORS.textMuted, align: 'center',
-      }).setOrigin(0.5);
+      this.addSectionHeader(y, '🌐 GLOBAL HALL');
+      y += 28;
+      this.add.text(GAME_WIDTH / 2, y, 'Firebase not configured.\nAdd credentials to enable live rankings', {
+        fontFamily: 'Inter',
+        fontSize: '12px',
+        color: COLORS.textMuted,
+        align: 'center',
+      }).setOrigin(0.5).setDepth(5);
       return;
     }
 
-    this.statusText = this.add.text(GAME_WIDTH / 2, y, 'Loading legends...', {
-      fontFamily: 'Inter', fontSize: '12px', color: COLORS.textMuted,
-    }).setOrigin(0.5);
+    // Global leaderboard
+    this.addSectionHeader(y, '🌍 GLOBAL TOP 5');
+    y += 28;
 
-    const [global, lecturers, deptBoard] = await Promise.all([
-      getLeaderboard({ modeId: 'flappy_cst', topN: 1 }),
-      getLeaderboard({ modeId: 'department', role: ROLES.LECTURER, topN: 1 }),
-      player?.department
-        ? getLeaderboard({ modeId: 'department', department: player.department, role: ROLES.STUDENT, topN: 1 })
-        : Promise.resolve([]),
-    ]);
+    const globalEntries = await getLeaderboard({ modeId: 'flappy_cst', topN: 5 });
+    if (globalEntries.length > 0) {
+      globalEntries.forEach((entry, idx) => {
+        const medal = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'][idx];
+        const color = idx < 3 ? COLORS.gold : COLORS.textMuted;
 
-    // Rising star — 1st year top from global entries
-    const allGlobal = await getLeaderboard({ modeId: 'journey', topN: 20 });
-    const risingStar = allGlobal.find((e) => e.year === '1st Year');
+        this.add.text(GAME_WIDTH / 2 - 100, y + idx * 28, `${medal} ${entry.name || 'Anonymous'}`, {
+          fontFamily: 'Inter',
+          fontSize: '12px',
+          color,
+          fontStyle: idx < 3 ? 'bold' : 'normal',
+        }).setOrigin(0, 0.5).setDepth(5);
 
-    this.statusText.destroy();
-    y = this.contentY;
-
-    if (global[0]) {
-      this.addSectionTitle(y, '🏆 Overall Champion');
-      y += 28;
-      this.addGlowEntry(y, global[0].name, `${global[0].department} · ${global[0].score} pts`);
-      y += 45;
+        this.add.text(GAME_WIDTH / 2 + 100, y + idx * 28, `${entry.score}`, {
+          fontFamily: 'Orbitron',
+          fontSize: '12px',
+          color,
+          fontStyle: idx < 3 ? 'bold' : 'normal',
+        }).setOrigin(1, 0.5).setDepth(5);
+      });
+      y += globalEntries.length * 28 + 10;
     }
 
-    if (deptBoard[0]) {
-      this.addSectionTitle(y, `🎓 ${player?.department || 'Department'} Hero`);
+    // Department heroes (if student)
+    if (player?.role !== ROLES.LECTURER && player?.department) {
+      y += 15;
+      this.addSectionHeader(y, `🎯 ${player.department.toUpperCase()} HEROES`);
       y += 28;
-      this.addGlowEntry(y, deptBoard[0].name, `${deptBoard[0].year} · ${deptBoard[0].score} pts`);
-      y += 45;
-    }
 
-    if (lecturers[0]) {
-      this.addSectionTitle(y, '👨‍🏫 Top Lecturer');
-      y += 28;
-      this.addGlowEntry(y, lecturers[0].name, `${lecturers[0].department} · ${lecturers[0].score} pts`);
-      y += 45;
-    }
+      const deptEntries = await getLeaderboard({
+        modeId: 'department',
+        department: player.department,
+        role: ROLES.STUDENT,
+        topN: 5,
+      });
 
-    if (risingStar) {
-      this.addSectionTitle(y, '🌟 Rising Star (1st Year)');
-      y += 28;
-      this.addGlowEntry(y, risingStar.name, `${risingStar.department} · ${risingStar.score} pts`);
+      if (deptEntries.length > 0) {
+        deptEntries.forEach((entry, idx) => {
+          const medal = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'][idx];
+          const color = idx < 3 ? COLORS.gold : COLORS.textMuted;
+
+          this.add.text(GAME_WIDTH / 2 - 100, y + idx * 28, `${medal} ${entry.name || 'Anonymous'}`, {
+            fontFamily: 'Inter',
+            fontSize: '12px',
+            color,
+            fontStyle: idx < 3 ? 'bold' : 'normal',
+          }).setOrigin(0, 0.5).setDepth(5);
+
+          this.add.text(GAME_WIDTH / 2 + 100, y + idx * 28, `${entry.score}`, {
+            fontFamily: 'Orbitron',
+            fontSize: '12px',
+            color,
+            fontStyle: idx < 3 ? 'bold' : 'normal',
+          }).setOrigin(1, 0.5).setDepth(5);
+        });
+      }
     }
   }
 
-  addSectionTitle(y, text) {
+  addSectionHeader(y, text) {
+    const headerBg = this.add.rectangle(GAME_WIDTH / 2, y, GAME_WIDTH - 40, 24, 0xffffff, 0.08)
+      .setStrokeStyle(1, COLORS.gold, 0.3).setDepth(5);
+
     this.add.text(GAME_WIDTH / 2, y, text, {
-      fontFamily: 'Orbitron', fontSize: '15px', color: COLORS.gold, fontStyle: 'bold',
-    }).setOrigin(0.5);
+      fontFamily: 'Orbitron',
+      fontSize: '12px',
+      color: COLORS.gold,
+      fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(6);
   }
 
-  addGlowEntry(y, name, detail) {
-    const bg = this.add.rectangle(GAME_WIDTH / 2, y, GAME_WIDTH - 50, 36, 0xffffff, 0.12)
-      .setStrokeStyle(1, 0xffd700, 0.35);
-    this.add.text(GAME_WIDTH / 2, y - 8, name, {
-      fontFamily: 'Orbitron', fontSize: '16px', color: COLORS.white, fontStyle: 'bold',
-    }).setOrigin(0.5).setShadow(0, 0, '#ffd700', 4, true, true);
-    this.add.text(GAME_WIDTH / 2, y + 10, detail, {
-      fontFamily: 'Inter', fontSize: '13px', color: COLORS.textMuted,
-    }).setOrigin(0.5);
-    this.tweens.add({ targets: bg, alpha: { from: 0.12, to: 0.22 }, duration: 1500, yoyo: true, repeat: -1 });
+  addGlowEntry(y, title, subtitle) {
+    this.add.text(GAME_WIDTH / 2 - 80, y, title, {
+      fontFamily: 'Inter',
+      fontSize: '13px',
+      color: COLORS.silverLight,
+      fontStyle: 'bold',
+    }).setOrigin(0, 0.5).setDepth(5);
+
+    this.add.text(GAME_WIDTH / 2 + 80, y, subtitle, {
+      fontFamily: 'Orbitron',
+      fontSize: '13px',
+      color: COLORS.gold,
+      fontStyle: 'bold',
+    }).setOrigin(1, 0.5).setDepth(5);
   }
 }
