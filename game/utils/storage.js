@@ -25,7 +25,7 @@ export function clearPlayer() {
   localStorage.removeItem(STORAGE_KEYS.PLAYER);
 }
 
-/** Get best scores per mode */
+/** Get best scores per mode (keeps only highest per mode) */
 export function getBestScores() {
   return readJSON(STORAGE_KEYS.BEST_SCORES, {});
 }
@@ -39,6 +39,56 @@ export function updateBestScore(mode, score) {
     return true;
   }
   return false;
+}
+
+/** Get ALL score history (all attempts) for a mode */
+export function getScoreHistory(mode) {
+  const history = readJSON(STORAGE_KEYS.STATS, {});
+  if (!history[mode]) {
+    history[mode] = [];
+  }
+  return history[mode];
+}
+
+/** Add a score to the history (keeps all scores, not just best) */
+export function addScoreToHistory(mode, score, timestamp = new Date().toISOString()) {
+  const stats = readJSON(STORAGE_KEYS.STATS, {});
+  if (!stats[mode]) {
+    stats[mode] = [];
+  }
+  
+  // Add new score to history
+  stats[mode].push({
+    score,
+    timestamp,
+  });
+  
+  // Keep last 100 scores per mode (prevent storage bloat)
+  if (stats[mode].length > 100) {
+    stats[mode] = stats[mode].slice(-100);
+  }
+  
+  localStorage.setItem(STORAGE_KEYS.STATS, JSON.stringify(stats));
+}
+
+/** Get score statistics (avg, min, max, count) for a mode */
+export function getScoreStats(mode) {
+  const history = getScoreHistory(mode);
+  if (history.length === 0) {
+    return { count: 0, best: 0, average: 0, total: 0 };
+  }
+  
+  const scores = history.map(h => h.score);
+  const best = Math.max(...scores);
+  const average = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+  const total = scores.reduce((a, b) => a + b, 0);
+  
+  return {
+    count: scores.length,
+    best,
+    average,
+    total,
+  };
 }
 
 /** Legacy master sound toggle */
@@ -116,4 +166,18 @@ export function resizeImageToBase64(src, size = AVATAR_SIZE) {
     img.onerror = reject;
     img.src = src;
   });
+}
+
+/** Get unlocked achievements */
+export function getUnlockedAchievements() {
+  return readJSON(STORAGE_KEYS.ACHIEVEMENTS, []);
+}
+
+/** Add achievement */
+export function unlockAchievement(achievementId) {
+  const unlocked = getUnlockedAchievements();
+  if (!unlocked.includes(achievementId)) {
+    unlocked.push(achievementId);
+    localStorage.setItem(STORAGE_KEYS.ACHIEVEMENTS, JSON.stringify(unlocked));
+  }
 }

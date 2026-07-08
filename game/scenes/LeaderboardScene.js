@@ -5,7 +5,7 @@ import { UIHelper } from '../utils/UIHelper.js';
 
 /**
  * LeaderboardScene — Mode-aware leaderboards with department/role filtering.
- * Enhanced with better styling and visual hierarchy.
+ * Fixed UI layout and column alignment.
  */
 export class LeaderboardScene extends Phaser.Scene {
   constructor() {
@@ -29,7 +29,7 @@ export class LeaderboardScene extends Phaser.Scene {
     this.add
       .text(GAME_WIDTH / 2, 95, '🏆 LEADERBOARD 🏆', {
         fontFamily: 'Orbitron',
-        fontSize: '22px',
+        fontSize: '20px',
         color: COLORS.gold,
         fontStyle: 'bold',
       })
@@ -38,9 +38,9 @@ export class LeaderboardScene extends Phaser.Scene {
       .setShadow(0, 0, '#ffd700', 4, true, true);
 
     this.add
-      .text(GAME_WIDTH / 2, 120, 'Top Performers', {
+      .text(GAME_WIDTH / 2, 118, 'Top 10 Performers', {
         fontFamily: 'Inter',
-        fontSize: '12px',
+        fontSize: '11px',
         color: COLORS.textMuted,
       })
       .setOrigin(0.5)
@@ -60,22 +60,23 @@ export class LeaderboardScene extends Phaser.Scene {
     }
 
     this.deptLabel = this.add
-      .text(GAME_WIDTH / 2, 165, '', {
+      .text(GAME_WIDTH / 2, 155, '', {
         fontFamily: 'Orbitron',
-        fontSize: '13px',
+        fontSize: '12px',
         color: COLORS.gold,
         fontStyle: 'bold',
       })
       .setOrigin(0.5)
       .setDepth(5);
 
-    // Entries container
-    this.entriesContainer = this.add.container(GAME_WIDTH / 2, 340);
+    // Scrollable entries area
+    this.entriesContainer = this.add.container(GAME_WIDTH / 2, 320);
     this.statusText = this.add
-      .text(GAME_WIDTH / 2, 300, 'Loading...', {
+      .text(GAME_WIDTH / 2, 320, 'Loading...', {
         fontFamily: 'Inter',
-        fontSize: '14px',
+        fontSize: '13px',
         color: COLORS.textMuted,
+        align: 'center',
       })
       .setOrigin(0.5)
       .setDepth(5);
@@ -94,9 +95,9 @@ export class LeaderboardScene extends Phaser.Scene {
 
   createModeTabs() {
     const modes = [MODES.FLAPPY_CST, MODES.JOURNEY, MODES.DEPARTMENT];
-    const tabW = (GAME_WIDTH - 50) / 3;
-    const startX = 25 + tabW / 2;
-    const y = 135;
+    const tabW = (GAME_WIDTH - 40) / 3;
+    const startX = 20 + tabW / 2;
+    const y = 130;
 
     this.tabBgs = [];
 
@@ -105,23 +106,21 @@ export class LeaderboardScene extends Phaser.Scene {
       const isActive = mode.id === this.selectedModeId;
 
       const bg = this.add
-        .rectangle(x, y, tabW - 6, 38, 0xffffff, isActive ? 0.3 : 0.1)
-        .setStrokeStyle(2, isActive ? COLORS.gold : COLORS.silver, isActive ? 0.9 : 0.3)
+        .rectangle(x, y, tabW - 8, 36, 0xffffff, isActive ? 0.3 : 0.08)
+        .setStrokeStyle(2, isActive ? COLORS.gold : COLORS.silver, isActive ? 0.9 : 0.2)
         .setInteractive({ useHandCursor: true })
         .setDepth(5);
 
-      const shortName = mode.emoji + '\n' + mode.name.split(' ')[0];
+      const shortName = mode.emoji + ' ' + mode.name.split(' ')[0];
       this.add
         .text(x, y, shortName, {
           fontFamily: 'Inter',
-          fontSize: '11px',
+          fontSize: '10px',
           fontStyle: isActive ? 'bold' : 'normal',
           color: isActive ? COLORS.gold : COLORS.textMuted,
-          align: 'center',
         })
         .setOrigin(0.5)
-        .setDepth(6)
-        .setLineSpacing(2);
+        .setDepth(6);
 
       bg.on('pointerdown', () => {
         this.selectedModeId = mode.id;
@@ -143,17 +142,16 @@ export class LeaderboardScene extends Phaser.Scene {
     // Update department label
     if (this.selectedModeId === 'department') {
       const dept = DEPARTMENTS[this.selectedDeptIndex];
-      const role = player?.role === ROLES.LECTURER ? 'Lecturers' : DEPARTMENTS[this.selectedDeptIndex];
       this.deptLabel.setText(
         player?.role === ROLES.LECTURER
-          ? '👨‍🏫 Lecturer Leaderboard'
+          ? '👨‍🏫 Lecturer Rankings'
           : `🎓 ${dept} Students`
       );
 
       // Dept cycle arrows for students view
       if (player?.role !== ROLES.LECTURER) {
         this.add
-          .text(45, 165, '◀', { fontSize: '16px', color: COLORS.gold, fontStyle: 'bold' })
+          .text(40, 155, '◀', { fontSize: '14px', color: COLORS.gold, fontStyle: 'bold' })
           .setOrigin(0.5)
           .setInteractive({ useHandCursor: true })
           .setDepth(5)
@@ -163,7 +161,7 @@ export class LeaderboardScene extends Phaser.Scene {
           });
 
         this.add
-          .text(GAME_WIDTH - 45, 165, '▶', { fontSize: '16px', color: COLORS.gold, fontStyle: 'bold' })
+          .text(GAME_WIDTH - 40, 155, '▶', { fontSize: '14px', color: COLORS.gold, fontStyle: 'bold' })
           .setOrigin(0.5)
           .setInteractive({ useHandCursor: true })
           .setDepth(5)
@@ -201,32 +199,33 @@ export class LeaderboardScene extends Phaser.Scene {
       return;
     }
 
-    // Enhanced header section
-    const headerY = -180;
-    const headerHeight = 40;
+    // Draw header with fixed layout
+    const headerY = -140;
+    const rowHeight = 38;
+    const contentWidth = GAME_WIDTH - 60;
 
-    // Header background with gradient effect
+    // Header background
     this.entriesContainer.add(
       this.add
-        .rectangle(GAME_WIDTH / 2, headerY, GAME_WIDTH - 40, headerHeight, 0xffd700, 0.15)
+        .rectangle(0, headerY, contentWidth, 34, 0xffd700, 0.15)
         .setStrokeStyle(2, COLORS.gold, 0.6)
     );
 
-    // Header columns
-    const headerCols = [
-      { label: 'Rank', x: -185, align: 0 },
-      { label: 'Player', x: -110, align: 0 },
-      { label: 'Dept', x: 10, align: 0.5 },
-      { label: 'Year', x: 75, align: 0 },
-      { label: 'Score', x: 165, align: 1 },
+    // Header columns: Rank | Name | Dept | Year | Score
+    const headers = [
+      { label: 'Rank', x: -contentWidth / 2 + 25, align: 0.5, w: 45 },
+      { label: 'Player', x: -contentWidth / 2 + 75, align: 0, w: 100 },
+      { label: 'Dept', x: 20, align: 0.5, w: 75 },
+      { label: 'Year', x: 90, align: 0.5, w: 70 },
+      { label: 'Score', x: contentWidth / 2 - 25, align: 1, w: 50 },
     ];
 
-    headerCols.forEach((h) => {
+    headers.forEach((h) => {
       this.entriesContainer.add(
         this.add
           .text(h.x, headerY, h.label, {
             fontFamily: 'Orbitron',
-            fontSize: '11px',
+            fontSize: '10px',
             color: COLORS.gold,
             fontStyle: 'bold',
           })
@@ -234,75 +233,67 @@ export class LeaderboardScene extends Phaser.Scene {
       );
     });
 
-    // Entries with enhanced styling
+    // Render entries with proper alignment
     entries.forEach((entry, idx) => {
-      const rowY = headerY + headerHeight + 6 + idx * 42;
+      const rowY = headerY + 40 + idx * rowHeight;
 
-      // Row background with alternating colors
-      const bgColor = idx % 2 === 0 ? 0xffffff : 0xf5f5f5;
-      const bgAlpha = idx % 2 === 0 ? 0.04 : 0.02;
-
+      // Row background
+      const bgAlpha = idx % 2 === 0 ? 0.06 : 0.02;
       this.entriesContainer.add(
         this.add
-          .rectangle(GAME_WIDTH / 2, rowY, GAME_WIDTH - 40, 40, bgColor, bgAlpha)
-          .setStrokeStyle(1, COLORS.gold, 0.1)
+          .rectangle(0, rowY, contentWidth, rowHeight - 2, 0xffffff, bgAlpha)
+          .setStrokeStyle(1, COLORS.gold, 0.08)
       );
 
-      // Medal ranks with emoji
-      const rankEmojis = ['🥇', '🥈', '🥉'];
-      const rankText = idx < 3 ? rankEmojis[idx] : `#${idx + 1}`;
+      // Rank with medals
+      const medalEmojis = ['🥇', '🥈', '🥉'];
+      const rankText = idx < 3 ? medalEmojis[idx] : `#${idx + 1}`;
       const rankColor = idx === 0 ? '#FFD700' : idx === 1 ? '#C0C0C0' : idx === 2 ? '#CD7F32' : COLORS.gold;
 
       this.entriesContainer.add(
-        this.add.text(-185, rowY, rankText, {
+        this.add.text(-contentWidth / 2 + 25, rowY, rankText, {
           fontFamily: 'Orbitron',
-          fontSize: idx < 3 ? '18px' : '12px',
+          fontSize: idx < 3 ? '14px' : '11px',
           color: rankColor,
           fontStyle: 'bold',
-        }).setOrigin(0, 0.5)
+        }).setOrigin(0.5, 0.5)
       );
 
-      // Player name with truncation
-      const playerName = entry.name?.length > 12 
-        ? entry.name.substring(0, 11) + '…' 
-        : entry.name || 'Anonymous';
-      
+      // Player name (truncate if needed)
+      const playerName = (entry.name || 'Anonymous').substring(0, 13);
       this.entriesContainer.add(
-        this.add.text(-110, rowY, playerName, {
+        this.add.text(-contentWidth / 2 + 75, rowY, playerName, {
           fontFamily: 'Inter',
-          fontSize: '12px',
+          fontSize: '10px',
           color: idx < 3 ? COLORS.silverLight : COLORS.text,
           fontStyle: idx < 3 ? 'bold' : 'normal',
         }).setOrigin(0, 0.5)
       );
 
-      // Department (abbreviated)
-      const deptShort = entry.department?.length > 8
-        ? entry.department.substring(0, 7) + '…'
-        : entry.department || '—';
-
+      // Department (truncate)
+      const deptShort = (entry.department || '—').substring(0, 6);
       this.entriesContainer.add(
-        this.add.text(10, rowY, deptShort, {
+        this.add.text(20, rowY, deptShort, {
           fontFamily: 'Inter',
-          fontSize: '11px',
+          fontSize: '9px',
           color: COLORS.textMuted,
         }).setOrigin(0.5, 0.5)
       );
 
       // Year
       this.entriesContainer.add(
-        this.add.text(75, rowY, entry.year || '—', {
+        this.add.text(90, rowY, entry.year || '—', {
           fontFamily: 'Inter',
-          fontSize: '11px',
+          fontSize: '9px',
           color: COLORS.textMuted,
-        }).setOrigin(0, 0.5)
+        }).setOrigin(0.5, 0.5)
       );
 
-      // Score (right-aligned with bold for top 3)
+      // Score
       this.entriesContainer.add(
-        this.add.text(165, rowY, String(entry.score), {
+        this.add.text(contentWidth / 2 - 25, rowY, String(entry.score), {
           fontFamily: 'Orbitron',
-          fontSize: '13px',
+          fontSize: '11px',
           color: idx < 3 ? COLORS.gold : COLORS.silverLight,
           fontStyle: idx < 3 ? 'bold' : 'normal',
         }).setOrigin(1, 0.5)
@@ -312,7 +303,14 @@ export class LeaderboardScene extends Phaser.Scene {
     // Footer line
     this.entriesContainer.add(
       this.add
-        .rectangle(GAME_WIDTH / 2, headerY + headerHeight + 6 + entries.length * 42 + 8, GAME_WIDTH - 40, 1, COLORS.gold, 0.4)
+        .rectangle(
+          0,
+          headerY + 40 + entries.length * rowHeight + 4,
+          contentWidth,
+          1,
+          COLORS.gold,
+          0.4
+        )
     );
   }
 }
