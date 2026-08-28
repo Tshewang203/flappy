@@ -1,6 +1,6 @@
 import { GAME_WIDTH, GAME_HEIGHT, COLORS, MODES, ROLES } from '../config/constants.js';
 import { getPlayer, getBestScores, getUnlockedAchievements } from '../utils/storage.js';
-import { ACHIEVEMENTS } from '../data/achievements.js';
+import { ACHIEVEMENTS } from '../utils/achievements.js';
 import { getLeaderboard, isFirebaseConfigured } from '../firebase.js';
 import { UIHelper } from '../utils/UIHelper.js';
 

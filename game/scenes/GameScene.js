@@ -3,6 +3,7 @@ import {
   GAME_HEIGHT,
   MODE_CONFIG,
   JOURNEY_MILESTONES,
+  STORY_LEVELS,
   MODES,
   GRAVITY,
   JUMP_VELOCITY,
@@ -69,6 +70,13 @@ export class GameScene extends Phaser.Scene {
     this.bgKeys = ['bg_foundation', 'bg_growth', 'bg_expansion', 'bg_innovation', 'bg_jubilee'];
     this.campusKeys = ['campus1', 'campus2', 'campus3', 'campus4', 'campus5'];
     this.pipeKeys = ['pipe_silver', 'pipe_blue', 'pipe_purple', 'pipe_red'];
+
+    this.storyLevel = 1;
+    this.storyTotalScore = 0;
+    this.storyAdvancing = false;
+    if (this.mode === 'story') {
+      this.applyStoryLevelSettings();
+    }
   }
 
   create() {
@@ -83,7 +91,7 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.fadeIn(300);
     loadOptionalImages(this);
 
-    const initialBg = this.getBackgroundKey(0);
+    const initialBg = this.mode === 'story' ? this.getStoryBackgroundKey() : this.getBackgroundKey(0);
     this.bg = this.add.image(GAME_WIDTH / 2, GAME_HEIGHT / 2, initialBg).setDepth(-2);
     this.fitBackground();
 
@@ -127,7 +135,9 @@ export class GameScene extends Phaser.Scene {
       ? '🛩️ Classic Flappy — Just Fly'
       : this.mode === 'journey'
         ? '🏛️ CST trivia at 5, 15 & 25 pts'
-        : `🎯 ${this.player?.department || 'Dept'} — surprise quizzes!`;
+        : this.mode === 'story'
+          ? '📖 Reach the score to complete each level'
+          : `🎯 ${this.player?.department || 'Dept'} — surprise quizzes!`;
     this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 95, modeTag, {
       fontFamily: 'Inter', fontSize: '12px', color: 'rgba(255,255,255,0.55)',
     }).setOrigin(0.5).setDepth(20);
@@ -430,10 +440,19 @@ export class GameScene extends Phaser.Scene {
 
     this.updateCampusBackground();
     if (this.mode === 'journey') this.updateJourneyBackground();
+    if (this.mode === 'story') this.updateStoryBackground();
+  }
+
+  updateStoryBackground() {
+    if (this.bgTransitioning || this.storyAdvancing || !this.bg) return;
+    const preferredBg = this.getStoryBackgroundKey();
+    if (preferredBg !== this.bg.texture.key) {
+      this.transitionStoryBackground();
+    }
   }
 
   updateCampusBackground() {
-    if (this.mode === 'journey' || this.modeInfo?.classic) return;
+    if (this.mode === 'journey' || this.mode === 'story' || this.modeInfo?.classic) return;
 
     let era = 0;
     for (let i = JOURNEY_MILESTONES.length - 1; i >= 0; i--) {
@@ -665,8 +684,13 @@ export class GameScene extends Phaser.Scene {
   }
 
   addScore(points) {
-    this.score += points * this.scoreMultiplier;
+    const gained = points * this.scoreMultiplier;
+    this.score += gained;
     this.events.emit('scoreUpdate', this.score);
+    if (this.mode === 'story') {
+      this.storyTotalScore += gained;
+      this.checkStoryLevelComplete();
+    }
   }
 
   updateJourneyBackground() {
@@ -711,7 +735,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   gameOver() {
-    if (this.isGameOver) return;
+    if (this.isGameOver || this.storyAdvancing) return;
     this.isGameOver = true;
     AudioManager.play(this, 'hit');
     AudioManager.play(this, 'gameover', { volume: 0.5 });
@@ -726,11 +750,129 @@ export class GameScene extends Phaser.Scene {
       this.scene.stop('QuizScene');
       this.scene.stop('LegacyScene');
       this.scene.start('GameOverScene', {
-        score: this.score,
+        score: this.mode === 'story' ? this.storyTotalScore : this.score,
         mode: this.mode,
         player: this.player,
         quizStreak: this.quizStreak,
         legacyTriggered: this.legacyTriggered,
+      });
+    });
+  }
+
+  getStoryBackgroundKey() {
+    const level = STORY_LEVELS[this.storyLevel - 1] || STORY_LEVELS[0];
+    const key = level.bgKey;
+    if (this.textures.exists(key)) return key;
+    return this.bgKeys[Math.min(this.storyLevel - 1, this.bgKeys.length - 1)] || 'bg_foundation';
+  }
+
+  applyStoryLevelSettings() {
+    const level = STORY_LEVELS[this.storyLevel - 1] || STORY_LEVELS[0];
+    this.config = {
+      ...MODE_CONFIG.story,
+      initialSpeed: level.initialSpeed,
+      maxSpeed: level.maxSpeed,
+      initialGap: level.initialGap,
+      minGap: level.minGap,
+      spawnInterval: level.spawnInterval,
+    };
+    this.gameSpeed = this.config.initialSpeed;
+    this.pipeGap = this.config.initialGap;
+    this.currentEra = Math.min(this.storyLevel - 1, this.pipeKeys.length - 1);
+  }
+
+  checkStoryLevelComplete() {
+    if (this.mode !== 'story' || this.isGameOver || this.storyAdvancing) return;
+    const level = STORY_LEVELS[this.storyLevel - 1];
+    if (!level || this.score < level.requiredScore) return;
+
+    if (this.storyLevel >= STORY_LEVELS.length) {
+      this.completeStoryMode();
+      return;
+    }
+
+    this.advanceStoryLevel();
+  }
+
+  clearStoryObstacles() {
+    this.pipes.getChildren().slice().forEach((pipe) => {
+      pipe.getData('cap')?.destroy();
+      pipe.destroy();
+    });
+    this.powerUps.getChildren().slice().forEach((pu) => {
+      pu.getData('emojiRef')?.destroy();
+      pu.destroy();
+    });
+    this.obstacleLabels.getChildren().slice().forEach((label) => label.destroy());
+    this.pipeTimer = 0;
+  }
+
+  transitionStoryBackground() {
+    const newBg = this.getStoryBackgroundKey();
+    if (this.bgTransitioning || !this.bg || this.bg.texture.key === newBg) return;
+
+    this.bgTransitioning = true;
+    this.tweens.add({
+      targets: this.bg,
+      alpha: 0,
+      duration: 450,
+      onComplete: () => {
+        this.bg.setTexture(newBg);
+        this.fitBackground();
+        this.tweens.add({
+          targets: this.bg,
+          alpha: 1,
+          duration: 450,
+          onComplete: () => { this.bgTransitioning = false; },
+        });
+      },
+    });
+  }
+
+  advanceStoryLevel() {
+    this.storyAdvancing = true;
+    this.isPaused = true;
+    this.physics.pause();
+    this.events.emit('storyLevelComplete', { level: this.storyLevel, storyComplete: false });
+
+    this.time.delayedCall(1400, () => {
+      if (this.isGameOver || !this.scene.isActive('GameScene')) return;
+      this.storyLevel += 1;
+      this.score = 0;
+      this.obstaclesPassed = 0;
+      this.applyStoryLevelSettings();
+      this.clearStoryObstacles();
+      this.transitionStoryBackground();
+      this.events.emit('scoreUpdate', this.score);
+      this.events.emit('storyLevelChange', this.storyLevel);
+      this.storyAdvancing = false;
+      this.isPaused = false;
+      this.physics.resume();
+    });
+  }
+
+  completeStoryMode() {
+    if (this.isGameOver) return;
+    this.isGameOver = true;
+    this.storyAdvancing = true;
+    this.isPaused = true;
+    this.physics.pause();
+    AudioManager.stopBGM(this);
+    AudioManager.play(this, 'powerup');
+    this.events.emit('storyLevelComplete', { level: this.storyLevel, storyComplete: true });
+
+    this.gameOverTimer = this.time.delayedCall(1800, () => {
+      if (!this.scene.isActive('GameScene')) return;
+      this.scene.stop('UIScene');
+      this.scene.stop('QuizScene');
+      this.scene.stop('LegacyScene');
+      this.scene.start('GameOverScene', {
+        score: this.storyTotalScore,
+        mode: this.mode,
+        player: this.player,
+        quizStreak: this.quizStreak,
+        legacyTriggered: this.legacyTriggered,
+        storyComplete: true,
       });
     });
   }

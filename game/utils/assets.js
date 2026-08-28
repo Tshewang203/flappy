@@ -5,6 +5,7 @@ export function loadOptionalImages(scene) {
   const optional = [
     ['cst_logo', ASSETS.logo],
     ...ASSETS.campus.map((path, i) => [`campus${i + 1}`, path]),
+    ...ASSETS.story.map((path, i) => [`story${i + 1}`, path]),
   ];
 
   optional.forEach(([key, path]) => {

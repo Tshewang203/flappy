@@ -12,6 +12,7 @@ export class UIScene extends Phaser.Scene {
     this.mode = data?.mode || 'flappy_cst';
     this.player = data?.player;
     this.currentScore = 0;
+    this.storyLevel = 1;
   }
 
   create() {
@@ -34,6 +35,18 @@ export class UIScene extends Phaser.Scene {
           fontFamily: 'Inter',
           fontSize: '12px',
           color: COLORS.gold,
+        })
+        .setOrigin(1, 0)
+        .setScrollFactor(0);
+    }
+
+    if (this.mode === 'story') {
+      this.levelText = this.add
+        .text(GAME_WIDTH - 16, 16, 'LEVEL 1 / 6', {
+          fontFamily: 'Orbitron',
+          fontSize: '13px',
+          color: COLORS.gold,
+          fontStyle: 'bold',
         })
         .setOrigin(1, 0)
         .setScrollFactor(0);
@@ -109,11 +122,40 @@ export class UIScene extends Phaser.Scene {
     this._onGameStarted = () => {
       this.scoreText.setAlpha(1);
     };
+    this._onStoryLevelChange = (level) => {
+      this.storyLevel = level;
+      this.levelText?.setText(`LEVEL ${level} / 6`);
+    };
+    this._onStoryLevelComplete = ({ storyComplete }) => {
+      const message = storyComplete ? 'STORY MODE COMPLETE!' : 'LEVEL COMPLETE!';
+      const notify = this.add
+        .text(GAME_WIDTH / 2, GAME_WIDTH / 2, message, {
+          fontFamily: 'Orbitron',
+          fontSize: '22px',
+          color: COLORS.gold,
+          fontStyle: 'bold',
+        })
+        .setOrigin(0.5)
+        .setScrollFactor(0)
+        .setAlpha(0);
+
+      this.tweens.add({
+        targets: notify,
+        alpha: { from: 0, to: 1 },
+        y: notify.y - 30,
+        duration: 600,
+        yoyo: true,
+        hold: 1000,
+        onComplete: () => notify.destroy(),
+      });
+    };
 
     gameScene.events.on('scoreUpdate', this._onScoreUpdate);
     gameScene.events.on('powerUpCollected', this._onPowerUp);
     gameScene.events.on('eraChange', this._onEraChange);
     gameScene.events.on('gameStarted', this._onGameStarted);
+    gameScene.events.on('storyLevelChange', this._onStoryLevelChange);
+    gameScene.events.on('storyLevelComplete', this._onStoryLevelComplete);
 
     this.events.once('shutdown', this.cleanupUIScene, this);
   }
@@ -125,6 +167,8 @@ export class UIScene extends Phaser.Scene {
       gameScene.events.off('powerUpCollected', this._onPowerUp);
       gameScene.events.off('eraChange', this._onEraChange);
       gameScene.events.off('gameStarted', this._onGameStarted);
+      gameScene.events.off('storyLevelChange', this._onStoryLevelChange);
+      gameScene.events.off('storyLevelComplete', this._onStoryLevelComplete);
     }
   }
 }

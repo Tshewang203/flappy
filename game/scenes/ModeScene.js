@@ -30,9 +30,9 @@ export class ModeScene extends Phaser.Scene {
     }
 
     const bests = getBestScores();
-    const modes = [MODES.FLAPPY_CST, MODES.JOURNEY, MODES.DEPARTMENT];
-    const startY = 215;
-    const cardGap = 152;
+    const modes = [MODES.FLAPPY_CST, MODES.JOURNEY, MODES.DEPARTMENT, MODES.STORY];
+    const startY = 200;
+    const cardGap = 112;
 
     modes.forEach((mode, idx) => {
       this.createModeCard(GAME_WIDTH / 2, startY + idx * cardGap, mode, bests[mode.id] || 0);
@@ -71,7 +71,7 @@ export class ModeScene extends Phaser.Scene {
 
   createModeCard(x, y, mode, bestScore) {
     const cardW = GAME_WIDTH - 50;
-    const cardH = 130;
+    const cardH = 104;
     const iconX = -cardW / 2 + 44;
 
     const container = this.add.container(x, y).setDepth(10);
@@ -84,19 +84,19 @@ export class ModeScene extends Phaser.Scene {
     const iconParts = this.createModeIcon(iconX, 0, mode);
 
     const texts = [
-      this.add.text(-cardW / 2 + 88, -28, mode.name, {
+      this.add.text(-cardW / 2 + 88, -24, mode.name, {
         fontFamily: 'Orbitron', fontSize: '18px', color: COLORS.white, fontStyle: 'bold',
       }).setOrigin(0, 0.5),
-      this.add.text(-cardW / 2 + 88, -2, mode.subtitle, {
+      this.add.text(-cardW / 2 + 88, 0, mode.subtitle, {
         fontFamily: 'Inter', fontSize: '13px', color: COLORS.silver,
       }).setOrigin(0, 0.5),
-      this.add.text(-cardW / 2 + 88, 24, mode.description, {
+      this.add.text(-cardW / 2 + 88, 20, mode.description, {
         fontFamily: 'Inter', fontSize: '12px', color: COLORS.textMuted, wordWrap: { width: cardW - 130 },
       }).setOrigin(0, 0),
-      this.add.text(cardW / 2 - 20, -32, `Best: ${bestScore}`, {
+      this.add.text(cardW / 2 - 20, -26, `Best: ${bestScore}`, {
         fontFamily: 'Orbitron', fontSize: '13px', color: COLORS.gold,
       }).setOrigin(1, 0.5),
-      this.add.text(cardW / 2 - 20, 28, 'PLAY ▶', {
+      this.add.text(cardW / 2 - 20, 22, 'PLAY ▶', {
         fontFamily: 'Orbitron', fontSize: '16px', color: COLORS.gold, fontStyle: 'bold',
       }).setOrigin(1, 0.5),
     ];

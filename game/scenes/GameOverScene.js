@@ -1,6 +1,6 @@
 import { GAME_WIDTH, GAME_HEIGHT, COLORS, MODES, ROLES } from '../config/constants.js';
 import { getPlayer, updateBestScore, addScoreToHistory, getScoreStats } from '../utils/storage.js';
-import { saveLeaderboardScore, isFirebaseConfigured } from '../firebase.js';
+import { submitScore, isFirebaseConfigured } from '../firebase.js';
 import { UIHelper } from '../utils/UIHelper.js';
 import { AudioManager } from '../utils/audio.js';
 
@@ -17,6 +17,7 @@ export class GameOverScene extends Phaser.Scene {
     this.mode = data?.mode || 'flappy_cst';
     this.player = data?.player;
     this.quizStreak = data?.quizStreak || 0;
+    this.storyComplete = data?.storyComplete || false;
   }
 
   create() {
@@ -32,7 +33,7 @@ export class GameOverScene extends Phaser.Scene {
     const stats = getScoreStats(this.mode);
     const modeInfo = Object.values(MODES).find((m) => m.id === this.mode);
 
-    this.add.text(GAME_WIDTH / 2, 60, '🎮 GAME OVER 🎮', {
+    this.add.text(GAME_WIDTH / 2, 60, this.storyComplete ? '📖 STORY MODE COMPLETE!' : '🎮 GAME OVER 🎮', {
       fontFamily: 'Orbitron',
       fontSize: '26px',
       color: COLORS.gold,
@@ -100,7 +101,7 @@ export class GameOverScene extends Phaser.Scene {
         color: COLORS.textMuted,
       }).setOrigin(0.5);
 
-      saveLeaderboardScore({
+      submitScore({
         playerName: this.player.name,
         department: this.player.department,
         year: this.player.year,
