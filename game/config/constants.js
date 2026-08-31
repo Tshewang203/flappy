@@ -98,11 +98,11 @@ export const MODES = {
 
 /** Story Mode — 6 levels with score targets and background keys */
 export const STORY_LEVELS = [
-  { level: 1, requiredScore: 10, bgKey: 'story1', initialSpeed: 155, maxSpeed: 220, initialGap: 220, minGap: 170, spawnInterval: 2600 },
-  { level: 2, requiredScore: 15, bgKey: 'story2', initialSpeed: 175, maxSpeed: 255, initialGap: 205, minGap: 155, spawnInterval: 2350 },
-  { level: 3, requiredScore: 20, bgKey: 'story3', initialSpeed: 195, maxSpeed: 290, initialGap: 190, minGap: 140, spawnInterval: 2100 },
-  { level: 4, requiredScore: 25, bgKey: 'story4', initialSpeed: 215, maxSpeed: 330, initialGap: 175, minGap: 128, spawnInterval: 1900 },
-  { level: 5, requiredScore: 30, bgKey: 'story5', initialSpeed: 240, maxSpeed: 370, initialGap: 160, minGap: 118, spawnInterval: 1700 },
+  { level: 1, requiredScore: 5, bgKey: 'story1', initialSpeed: 155, maxSpeed: 220, initialGap: 220, minGap: 170, spawnInterval: 2600 },
+  { level: 2, requiredScore: 5, bgKey: 'story2', initialSpeed: 175, maxSpeed: 255, initialGap: 205, minGap: 155, spawnInterval: 2350 },
+  { level: 3, requiredScore: 8, bgKey: 'story3', initialSpeed: 195, maxSpeed: 290, initialGap: 190, minGap: 140, spawnInterval: 2100 },
+  { level: 4, requiredScore: 8, bgKey: 'story4', initialSpeed: 215, maxSpeed: 330, initialGap: 175, minGap: 128, spawnInterval: 1900 },
+  { level: 5, requiredScore: 15, bgKey: 'story5', initialSpeed: 240, maxSpeed: 370, initialGap: 160, minGap: 118, spawnInterval: 1700 },
   { level: 6, requiredScore: 40, bgKey: 'story6', initialSpeed: 270, maxSpeed: 420, initialGap: 145, minGap: 108, spawnInterval: 1500 },
 ];
 
@@ -197,12 +197,12 @@ export const ASSETS = {
     'assets/images/campus5.png',
   ],
   story: [
-    'assets/images/story1.png',
-    'assets/images/story2.png',
-    'assets/images/story3.png',
-    'assets/images/story4.png',
-    'assets/images/story5.png',
-    'assets/images/story6.png',
+    'assets/images/story1.jpeg',
+    'assets/images/story2.jpeg',
+    'assets/images/story3.jpeg',
+    'assets/images/story4.jpeg',
+    'assets/images/story5.jpeg',
+    'assets/images/story6.jpeg',
   ],
   campusVideo: 'assets/video/campus-bg.mp4',
 };
