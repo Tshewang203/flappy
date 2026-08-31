@@ -21,12 +21,12 @@ import {
 import { MODES } from './config/constants.js';
 
 const firebaseConfig = {
-  apiKey: 'YOUR_API_KEY',
-  authDomain: 'YOUR_PROJECT.firebaseapp.com',
-  projectId: 'YOUR_PROJECT_ID',
-  storageBucket: 'YOUR_PROJECT.appspot.com',
-  messagingSenderId: 'YOUR_SENDER_ID',
-  appId: 'YOUR_APP_ID',
+  apiKey: "AIzaSyDoTuxsIvAo_nlpDPznjud2IjXL1Nvmjec",
+  authDomain: "flappybirdcst.firebaseapp.com",
+  projectId: "flappybirdcst",
+  storageBucket: "flappybirdcst.firebasestorage.app",
+  messagingSenderId: "422450767019",
+  appId: "1:422450767019:web:b7625d2850fbb3b7c3c3ee",
 };
 
 let db = null;
