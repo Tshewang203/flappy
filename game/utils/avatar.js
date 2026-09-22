@@ -106,7 +106,7 @@ export function openCameraCapture() {
     overlay.className = 'avatar-overlay';
     overlay.innerHTML = `
       <div class="avatar-modal">
-        <p class="avatar-modal-title">📸 Take Your Photo</p>
+        <p class="avatar-modal-title"><svg class="avatar-modal-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7l1.5-2.5h5L16 7"/><circle cx="12" cy="13.5" r="3.5"/></svg> Take Your Photo</p>
         <video class="avatar-video" autoplay playsinline muted></video>
         <canvas class="avatar-canvas" style="display:none"></canvas>
         <img class="avatar-preview" style="display:none" alt="Preview" />

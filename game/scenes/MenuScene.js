@@ -28,29 +28,25 @@ export class MenuScene extends Phaser.Scene {
 
     UIHelper.createTitle(this, 175, GAME_TITLE, GAME_TAGLINE, 10);
 
-    this.add.text(GAME_WIDTH / 2, 250, '🥈 25th SILVER JUBILEE 🥈', {
+    this.add.text(GAME_WIDTH / 2, 250, '25th SILVER JUBILEE', {
       fontFamily: 'Orbitron', fontSize: '16px', color: COLORS.gold,
     }).setOrigin(0.5).setDepth(10).setShadow(0, 1, '#000', 4, true, true);
 
-    UIHelper.createButton(this, GAME_WIDTH / 2, 310, '▶  PLAY', () => {
+    UIHelper.createButton(this, GAME_WIDTH / 2, 310, 'PLAY', () => {
       const player = getPlayer();
       if (player?.name) {
         UIHelper.goToScene(this, 'ModeScene');
       } else {
         UIHelper.goToScene(this, 'PlayerInfoScene');
       }
-    }, { depth: 10 });
+    }, { depth: 10, icon: 'play', style: 'primary' });
 
-    UIHelper.createButton(this, GAME_WIDTH / 2, 365, '🏛️  HALL OF FAME', () => {
-      UIHelper.goToScene(this, 'HallOfFameScene');
-    }, { depth: 10, width: 240 });
-
-    UIHelper.createButton(this, GAME_WIDTH / 2, 420, '🏆  LEADERBOARD', () => {
+    UIHelper.createButton(this, GAME_WIDTH / 2, 365, 'LEADERBOARD', () => {
       UIHelper.goToScene(this, 'LeaderboardScene');
-    }, { depth: 10 });
+    }, { depth: 10, icon: 'trophy' });
 
     // Sound settings panel
-    this.add.text(GAME_WIDTH / 2, 468, '🎧 Sound Settings', {
+    this.add.text(GAME_WIDTH / 2, 435, 'SOUND SETTINGS', {
       fontFamily: 'Orbitron', fontSize: '13px', color: COLORS.silver,
     }).setOrigin(0.5).setDepth(10);
 
@@ -58,34 +54,33 @@ export class MenuScene extends Phaser.Scene {
     this.sfxOn = isSfxEnabled();
 
     const musicBtn = UIHelper.createButton(
-      this, GAME_WIDTH / 2 - 95, 505,
-      this.musicOn ? '🎵 Music ON' : '🎵 Music OFF',
+      this, GAME_WIDTH / 2 - 95, 472,
+      this.musicOn ? 'MUSIC ON' : 'MUSIC OFF',
       () => {
         this.musicOn = !this.musicOn;
         setMusicEnabled(this.musicOn);
-        musicBtn.text.setText(this.musicOn ? '🎵 Music ON' : '🎵 Music OFF');
+        musicBtn.text.setText(this.musicOn ? 'MUSIC ON' : 'MUSIC OFF');
         if (!this.musicOn) AudioManager.stopBGM(this);
       },
-      { width: 170, height: 40, fontSize: '12px', depth: 10 }
+      { width: 170, height: 40, fontSize: '12px', depth: 10, icon: this.musicOn ? 'sound-on' : 'sound-off' }
     );
 
     const sfxBtn = UIHelper.createButton(
-      this, GAME_WIDTH / 2 + 95, 505,
-      this.sfxOn ? '🔊 FX ON' : '🔇 FX OFF',
+      this, GAME_WIDTH / 2 + 95, 472,
+      this.sfxOn ? 'FX ON' : 'FX OFF',
       () => {
         this.sfxOn = !this.sfxOn;
         setSfxEnabled(this.sfxOn);
-        sfxBtn.text.setText(this.sfxOn ? '🔊 FX ON' : '🔇 FX OFF');
+        sfxBtn.text.setText(this.sfxOn ? 'FX ON' : 'FX OFF');
       },
-      { width: 170, height: 40, fontSize: '12px', depth: 10 }
+      { width: 170, height: 40, fontSize: '12px', depth: 10, icon: this.sfxOn ? 'sound-on' : 'sound-off' }
     );
 
     const player = getPlayer();
     if (player?.name) {
-      const roleIcon = player.role === 'lecturer' ? '👨‍🏫' : '🎓';
-      const yearStr = player.role === 'lecturer' ? 'Lecturer' : player.year;
+      const yearStr = player.role === 'lecturer' ? 'Lecturer' : player.role === 'alumni' ? `Batch ${player.batch}` : player.year;
 
-      this.add.text(GAME_WIDTH / 2, 555, `${roleIcon} ${player.name} · ${player.department} · ${yearStr}`, {
+      this.add.text(GAME_WIDTH / 2, 555, `${player.name} · ${player.department} · ${yearStr}`, {
         fontFamily: 'Inter', fontSize: '13px', color: 'rgba(255,255,255,0.9)',
       }).setOrigin(0.5).setDepth(10).setShadow(0, 1, '#000', 3, true, true);
 
@@ -95,6 +90,8 @@ export class MenuScene extends Phaser.Scene {
         if (this.textures.exists(key)) this.textures.remove(key);
         this.textures.addBase64(key, avatar);
         this.add.image(GAME_WIDTH / 2 - 160, 555, key).setDisplaySize(28, 28).setDepth(10);
+      } else {
+        UIHelper.drawIcon(this, player.role === 'lecturer' ? 'lecturer' : 'student', GAME_WIDTH / 2 - 160, 555, 12, COLORS.gold, 10);
       }
 
       UIHelper.createButton(this, GAME_WIDTH / 2, 600, 'Change Player', () => {
@@ -104,8 +101,8 @@ export class MenuScene extends Phaser.Scene {
 
     const cstMsg = getRandomCSTMessage();
     if (cstMsg) {
-      this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 55, `💬 "${cstMsg.text}"`, {
-        fontFamily: 'Inter', fontSize: '11px', color: 'rgba(255,255,255,0.7)',
+      this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 55, `"${cstMsg.text}"`, {
+        fontFamily: 'Inter', fontSize: '11px', fontStyle: 'italic', color: 'rgba(255,255,255,0.7)',
         wordWrap: { width: GAME_WIDTH - 40 }, align: 'center',
       }).setOrigin(0.5).setDepth(10);
     }

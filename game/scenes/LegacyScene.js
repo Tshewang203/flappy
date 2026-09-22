@@ -1,5 +1,6 @@
 import { GAME_WIDTH, GAME_HEIGHT, COLORS } from '../config/constants.js';
 import { AudioManager } from '../utils/audio.js';
+import { UIHelper } from '../utils/UIHelper.js';
 
 /**
  * LegacyScene — Chronological CST timeline card (shown after Journey quizzes).
@@ -25,10 +26,12 @@ export class LegacyScene extends Phaser.Scene {
     this.add.rectangle(GAME_WIDTH / 2, cardY, GAME_WIDTH - 30, 400, 0x0067b1, 0.6)
       .setStrokeStyle(3, 0xffd700, 0.8).setDepth(1);
 
-    const header = this.isTimeline ? '✦ CST TIMELINE ✦' : '✦ CST LEGACY MOMENT ✦';
-    this.add.text(GAME_WIDTH / 2, cardY - 165, header, {
+    const header = this.isTimeline ? 'CST TIMELINE' : 'CST LEGACY MOMENT';
+    const headerText = this.add.text(GAME_WIDTH / 2, cardY - 165, header, {
       fontFamily: 'Orbitron', fontSize: '16px', color: COLORS.gold, fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(2);
+    UIHelper.drawIcon(this, 'star', GAME_WIDTH / 2 - headerText.width / 2 - 16, cardY - 165, 8, COLORS.gold, 2);
+    UIHelper.drawIcon(this, 'star', GAME_WIDTH / 2 + headerText.width / 2 + 16, cardY - 165, 8, COLORS.gold, 2);
 
     if (this.moment.sequenceLabel) {
       this.add.text(GAME_WIDTH / 2, cardY - 138, this.moment.sequenceLabel, {
@@ -48,9 +51,10 @@ export class LegacyScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(2);
 
     if (this.moment.location) {
-      this.add.text(GAME_WIDTH / 2, cardY + 48, `📍 ${this.moment.location}`, {
+      const locText = this.add.text(GAME_WIDTH / 2 + 8, cardY + 48, this.moment.location, {
         fontFamily: 'Inter', fontSize: '12px', color: COLORS.silver,
       }).setOrigin(0.5).setDepth(2);
+      UIHelper.drawIcon(this, 'pin', GAME_WIDTH / 2 - locText.width / 2 - 10, cardY + 48, 7, COLORS.silver, 2);
     }
 
     this.add.text(GAME_WIDTH / 2, cardY + 78, this.moment.description, {
@@ -58,9 +62,10 @@ export class LegacyScene extends Phaser.Scene {
       wordWrap: { width: GAME_WIDTH - 70 }, align: 'center',
     }).setOrigin(0.5).setDepth(2);
 
-    const continueText = this.add.text(GAME_WIDTH / 2, cardY + 165, 'Tap to continue ▶', {
+    const continueText = this.add.text(GAME_WIDTH / 2 - 8, cardY + 165, 'Tap to continue', {
       fontFamily: 'Orbitron', fontSize: '14px', color: COLORS.silver,
     }).setOrigin(0.5).setDepth(2);
+    UIHelper.drawIcon(this, 'forward', GAME_WIDTH / 2 + continueText.width / 2 + 14, cardY + 165, 6, COLORS.silver, 2);
 
     this.tweens.add({
       targets: continueText, alpha: { from: 0.5, to: 1 }, duration: 700, yoyo: true, repeat: -1,

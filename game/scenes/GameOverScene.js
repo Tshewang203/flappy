@@ -33,7 +33,7 @@ export class GameOverScene extends Phaser.Scene {
     const stats = getScoreStats(this.mode);
     const modeInfo = Object.values(MODES).find((m) => m.id === this.mode);
 
-    this.add.text(GAME_WIDTH / 2, 60, this.storyComplete ? '📖 STORY MODE COMPLETE!' : '🎮 GAME OVER 🎮', {
+    this.add.text(GAME_WIDTH / 2, 60, this.storyComplete ? 'STORY MODE COMPLETE!' : 'GAME OVER', {
       fontFamily: 'Orbitron',
       fontSize: '26px',
       color: COLORS.gold,
@@ -41,11 +41,25 @@ export class GameOverScene extends Phaser.Scene {
     }).setOrigin(0.5).setShadow(0, 0, '#ffd700', 4, true, true);
 
     // Mode display
-    this.add.text(GAME_WIDTH / 2, 105, `${modeInfo?.emoji} ${modeInfo?.name || this.mode}`, {
+    this.add.text(GAME_WIDTH / 2, 105, `${modeInfo?.name || this.mode}`, {
       fontFamily: 'Inter',
       fontSize: '14px',
       color: COLORS.textMuted,
     }).setOrigin(0.5);
+
+    // Player info line
+    if (this.player?.name) {
+      const yearOrBatch = this.player.role === ROLES.LECTURER
+        ? 'Lecturer'
+        : this.player.role === ROLES.ALUMNI
+          ? `Batch ${this.player.batch}`
+          : this.player.year;
+      this.add.text(GAME_WIDTH / 2, 127, `${this.player.name} · ${this.player.department} · ${yearOrBatch}`, {
+        fontFamily: 'Inter',
+        fontSize: '11px',
+        color: 'rgba(255,255,255,0.7)',
+      }).setOrigin(0.5);
+    }
 
     // Score display
     this.add.text(GAME_WIDTH / 2, 160, 'SCORE', {
@@ -64,7 +78,9 @@ export class GameOverScene extends Phaser.Scene {
 
     // Best badge
     if (isNewBest) {
-      this.add.text(GAME_WIDTH / 2, 250, '⭐ NEW PERSONAL BEST! ⭐', {
+      UIHelper.drawIcon(this, 'star', GAME_WIDTH / 2 - 92, 250, 8, COLORS.gold, 5);
+      UIHelper.drawIcon(this, 'star', GAME_WIDTH / 2 + 92, 250, 8, COLORS.gold, 5);
+      this.add.text(GAME_WIDTH / 2, 250, 'NEW PERSONAL BEST!', {
         fontFamily: 'Orbitron',
         fontSize: '12px',
         color: COLORS.gold,
@@ -84,49 +100,54 @@ export class GameOverScene extends Phaser.Scene {
 
     // Quiz streak
     if (this.quizStreak > 0) {
-      this.add.text(GAME_WIDTH / 2, statsY + 28, `🔥 Quiz Streak: ${this.quizStreak}`, {
+      const streakLabel = this.add.text(GAME_WIDTH / 2, statsY + 28, `Quiz Streak: ${this.quizStreak}`, {
         fontFamily: 'Inter',
         fontSize: '12px',
         color: '#FF6B6B',
         fontStyle: 'bold',
       }).setOrigin(0.5);
+      UIHelper.drawIcon(this, 'flame', GAME_WIDTH / 2 - streakLabel.width / 2 - 14, statsY + 28, 9, '#FF6B6B', 5);
       statsY += 35;
     }
 
     // Leaderboard submit status
     if (isFirebaseConfigured() && this.player) {
-      this.add.text(GAME_WIDTH / 2, statsY + 30, '📤 Submitting to leaderboard...', {
+      this.add.text(GAME_WIDTH / 2, statsY + 30, 'Submitting to leaderboard...', {
         fontFamily: 'Inter',
         fontSize: '10px',
         color: COLORS.textMuted,
       }).setOrigin(0.5);
 
       submitScore({
-        playerName: this.player.name,
+        name: this.player.name,
         department: this.player.department,
         year: this.player.year,
+        batch: this.player.batch,
         role: this.player.role,
         score: this.score,
         mode: this.mode,
-        timestamp: new Date().toISOString(),
       }).catch((err) => {
         console.error('Leaderboard submission failed:', err);
       });
     }
 
     // Buttons
-    const buttonY = GAME_HEIGHT - 120;
+    const buttonY = GAME_HEIGHT - 165;
 
-    UIHelper.createButton(this, GAME_WIDTH / 2 - 110, buttonY, '🔄 REPLAY', () => {
+    UIHelper.createButton(this, GAME_WIDTH / 2 - 110, buttonY, 'REPLAY', () => {
       UIHelper.goToScene(this, 'GameScene', { mode: this.mode });
-    }, { width: 180, height: 48, fontSize: '14px' });
+    }, { width: 180, height: 48, fontSize: '14px', icon: 'replay', style: 'primary' });
 
-    UIHelper.createButton(this, GAME_WIDTH / 2 + 110, buttonY, '🏠 MENU', () => {
+    UIHelper.createButton(this, GAME_WIDTH / 2 + 110, buttonY, 'MENU', () => {
       UIHelper.goToScene(this, 'MenuScene');
-    }, { width: 180, height: 48, fontSize: '14px' });
+    }, { width: 180, height: 48, fontSize: '14px', icon: 'home' });
 
-    UIHelper.createButton(this, GAME_WIDTH / 2, GAME_HEIGHT - 50, '← MODES', () => {
+    UIHelper.createButton(this, GAME_WIDTH / 2, buttonY + 58, 'VIEW LEADERBOARD', () => {
+      UIHelper.goToScene(this, 'LeaderboardScene', { modeId: this.mode });
+    }, { width: 240, height: 44, fontSize: '13px', icon: 'trophy' });
+
+    UIHelper.createButton(this, GAME_WIDTH / 2, GAME_HEIGHT - 50, 'MODES', () => {
       UIHelper.goToScene(this, 'ModeScene');
-    }, { width: 160, height: 44, fontSize: '13px' });
+    }, { width: 160, height: 44, fontSize: '13px', icon: 'back' });
   }
 }

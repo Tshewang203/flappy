@@ -1,9 +1,8 @@
 import { ASSETS } from '../config/constants.js';
 
-/** Load optional PNG assets without blocking scene boot */
+/** Load optional PNG assets without blocking scene boot (cst_logo is preloaded synchronously in BootScene instead) */
 export function loadOptionalImages(scene) {
   const optional = [
-    ['cst_logo', ASSETS.logo],
     ...ASSETS.campus.map((path, i) => [`campus${i + 1}`, path]),
     ...ASSETS.story.map((path, i) => [`story${i + 1}`, path]),
   ];

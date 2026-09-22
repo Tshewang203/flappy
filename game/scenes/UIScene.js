@@ -1,4 +1,5 @@
 import { GAME_WIDTH, COLORS, MODES } from '../config/constants.js';
+import { UIHelper } from '../utils/UIHelper.js';
 
 /**
  * UIScene — HUD overlay running parallel to GameScene.
@@ -18,8 +19,11 @@ export class UIScene extends Phaser.Scene {
   create() {
     const modeInfo = Object.values(MODES).find((m) => m.id === this.mode);
 
+    if (modeInfo?.iconType) {
+      UIHelper.drawIcon(this, modeInfo.iconType, 26, 24, 8, COLORS.textMuted, 5);
+    }
     this.add
-      .text(16, 16, `${modeInfo?.emoji || ''} ${modeInfo?.name || ''}`, {
+      .text(38, 16, modeInfo?.name || '', {
         fontFamily: 'Orbitron',
         fontSize: '13px',
         color: COLORS.textMuted,
@@ -28,16 +32,18 @@ export class UIScene extends Phaser.Scene {
 
     if (modeInfo?.hasQuiz) {
       const quizLabel = this.mode === 'journey'
-        ? '🏛️ CST @ 5·15·25'
-        : `🎯 ${this.player?.department || 'Dept'} Quiz`;
-      this.add
-        .text(GAME_WIDTH - 16, 16, quizLabel, {
+        ? 'CST @ 5·15·25'
+        : `${this.player?.department || 'Dept'} Quiz`;
+      const quizIcon = this.mode === 'journey' ? 'pin' : 'target';
+      const quizText = this.add
+        .text(GAME_WIDTH - 28, 16, quizLabel, {
           fontFamily: 'Inter',
           fontSize: '12px',
           color: COLORS.gold,
         })
         .setOrigin(1, 0)
         .setScrollFactor(0);
+      UIHelper.drawIcon(this, quizIcon, GAME_WIDTH - 16 - quizText.width - 14, 24, 7, COLORS.gold, 5);
     }
 
     if (this.mode === 'story') {
@@ -87,14 +93,23 @@ export class UIScene extends Phaser.Scene {
         duration: 150,
       });
     };
-    this._onPowerUp = ({ label }) => {
+    this._onPowerUp = ({ label, icon }) => {
       this.powerUpText.setText(`${label} Active!`);
       this.powerUpText.setVisible(true);
+      this.powerUpIcon?.destroy();
+      if (icon) {
+        this.powerUpIcon = UIHelper.drawIcon(this, icon, GAME_WIDTH / 2 - this.powerUpText.width / 2 - 14, 130, 8, COLORS.gold, 1);
+      }
+      const targets = icon ? [this.powerUpText, this.powerUpIcon] : [this.powerUpText];
       this.tweens.add({
-        targets: this.powerUpText,
+        targets,
         alpha: { from: 1, to: 0 },
         duration: 2000,
-        onComplete: () => this.powerUpText.setVisible(false),
+        onComplete: () => {
+          this.powerUpText.setVisible(false);
+          this.powerUpIcon?.destroy();
+          this.powerUpIcon = null;
+        },
       });
     };
     this._onEraChange = (milestone) => {

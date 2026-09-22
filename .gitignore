@@ -22,3 +22,6 @@ npm-debug.log*
 .env
 .env.local
 .env.*.local
+
+# Project notes (not part of the codebase)
+decrip.docx

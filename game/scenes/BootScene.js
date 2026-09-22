@@ -1,4 +1,4 @@
-import { GAME_WIDTH, GAME_HEIGHT, COLORS } from '../config/constants.js';
+import { GAME_WIDTH, GAME_HEIGHT, COLORS, ASSETS } from '../config/constants.js';
 import { loadOptionalImages } from '../utils/assets.js';
 import { initQuizData } from '../utils/quizEngine.js';
 
@@ -13,6 +13,10 @@ export class BootScene extends Phaser.Scene {
   preload() {
     this.load.json('cst_history', 'data/cst_history.json');
     this.load.json('department_questions', 'data/department_questions.json');
+    this.load.image('cst_logo', ASSETS.logo);
+    this.load.on('loaderror', (file) => {
+      if (file.key === 'cst_logo') console.warn('CST logo failed to load — using placeholder.');
+    });
 
     this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'Loading...', {
       fontFamily: 'Orbitron', fontSize: '18px', color: COLORS.silver,
@@ -50,8 +54,8 @@ export class BootScene extends Phaser.Scene {
 
   createAvatarTextures() {
     const styles = [
-      { key: 'avatar_lecturer', color: 0x0067b1, emoji: '👨‍🏫' },
-      { key: 'avatar_hacker', color: 0x2ecc71, emoji: '🧑‍💻' },
+      { key: 'avatar_lecturer', color: 0x0067b1 },
+      { key: 'avatar_hacker', color: 0x2ecc71 },
     ];
     styles.forEach(({ key, color }) => {
       const g = this.make.graphics({ x: 0, y: 0, add: false });
@@ -59,6 +63,15 @@ export class BootScene extends Phaser.Scene {
       g.fillCircle(24, 24, 22);
       g.lineStyle(2, 0xffd700, 0.8);
       g.strokeCircle(24, 24, 22);
+
+      // Simple person silhouette glyph
+      g.fillStyle(0xffffff, 0.9);
+      g.fillCircle(24, 17, 7);
+      g.beginPath();
+      g.arc(24, 40, 14, Phaser.Math.DegToRad(180), Phaser.Math.DegToRad(360), true);
+      g.closePath();
+      g.fillPath();
+
       g.generateTexture(key, 48, 48);
       g.destroy();
     });
@@ -110,12 +123,12 @@ export class BootScene extends Phaser.Scene {
 
   createObstacleTextures() {
     const types = {
-      book: { color: 0x8b4513, emoji: '📚', label: 'BOOK' },
-      exam: { color: 0xe74c3c, emoji: '📝', label: 'EXAM' },
-      assignment: { color: 0xf39c12, emoji: '📋', label: 'TASK' },
-      bug: { color: 0x2ecc71, emoji: '🐛', label: 'BUG' },
-      error: { color: 0xe74c3c, emoji: '⚠️', label: 'ERR' },
-      deadline: { color: 0x9b59b6, emoji: '⏰', label: 'DUE' },
+      book: { color: 0x8b4513, label: 'BOOK' },
+      exam: { color: 0xe74c3c, label: 'EXAM' },
+      assignment: { color: 0xf39c12, label: 'TASK' },
+      bug: { color: 0x2ecc71, label: 'BUG' },
+      error: { color: 0xe74c3c, label: 'ERR' },
+      deadline: { color: 0x9b59b6, label: 'DUE' },
     };
 
     Object.entries(types).forEach(([key, cfg]) => {

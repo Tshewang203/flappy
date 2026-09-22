@@ -17,6 +17,7 @@ export const GAME_TAGLINE = 'Learn • Play • Compete';
 
 export const ROLES = {
   STUDENT: 'student',
+  ALUMNI: 'alumni',
   LECTURER: 'lecturer',
 };
 
@@ -41,15 +42,22 @@ export const YEARS = [
   '5th Year',
 ];
 
+/** Alumni graduation batch years (newest first) */
+export const BATCH_YEARS = (() => {
+  const currentYear = new Date().getFullYear();
+  const years = [];
+  for (let y = currentYear; y >= 2000; y--) years.push(String(y));
+  return years;
+})();
+
 export const MODES = {
   FLAPPY_CST: {
     id: 'flappy_cst',
     name: 'Flappy CST',
+    shortName: 'Flappy',
     subtitle: 'Classic Flappy Bird',
     color: 0x2ecc71,
-    emoji: '🛩️',
-    icon: '🛩️',
-    iconBadge: '💨',
+    iconType: 'play',
     description: 'Tap, flap, survive.',
     hasQuiz: false,
     classic: true,
@@ -58,11 +66,10 @@ export const MODES = {
   JOURNEY: {
     id: 'journey',
     name: '25 Years Journey',
+    shortName: 'Journey',
     subtitle: 'CST History Trail',
     color: 0x9b59b6,
-    emoji: '🏛️',
-    icon: '🏛️',
-    iconBadge: '✨',
+    iconType: 'pin',
     description: 'CST history at score milestones',
     hasQuiz: true,
     quizCategory: 'CST',
@@ -71,11 +78,10 @@ export const MODES = {
   DEPARTMENT: {
     id: 'department',
     name: 'Department Challenge',
+    shortName: 'Department',
     subtitle: 'Your Dept, Your Quiz',
     color: 0x3498db,
-    emoji: '🎯',
-    icon: '🎯',
-    iconBadge: '🔥',
+    iconType: 'target',
     description: 'Random dept quizzes, scaled difficulty.',
     hasQuiz: true,
     quizCategory: 'department',
@@ -84,11 +90,10 @@ export const MODES = {
   STORY: {
     id: 'story',
     name: 'Story Mode',
+    shortName: 'Story',
     subtitle: '6 Levels, One Story',
     color: 0xe67e22,
-    emoji: '📖',
-    icon: '📖',
-    iconBadge: '⭐',
+    iconType: 'book',
     description: 'Reach the score to complete each level.',
     hasQuiz: false,
     classic: false,
@@ -172,10 +177,10 @@ export const MODE_CONFIG = {
 
 // Power-up definitions
 export const POWER_UPS = {
-  coffee: { emoji: '☕', duration: 3000, label: 'Slow Motion' },
-  shield: { emoji: '🛡️', duration: 0, label: 'Shield' },
-  double: { emoji: '⭐', duration: 5000, label: '2x Score' },
-  wifi: { emoji: '📶', duration: 0, label: 'WiFi Boost' },
+  coffee: { iconType: 'coffee', duration: 3000, label: 'Slow Motion' },
+  shield: { iconType: 'shield', duration: 0, label: 'Shield' },
+  double: { iconType: 'star', duration: 5000, label: '2x Score' },
+  wifi: { iconType: 'signal', duration: 0, label: 'WiFi Boost' },
 };
 
 // Physics
@@ -256,7 +261,8 @@ export const AUDIO_FILES = {
 
 /** Default avatar styles when no photo is taken */
 export const AVATAR_STYLES = {
-  student: { id: 'student', emoji: '🎓', label: 'Student' },
-  lecturer: { id: 'lecturer', emoji: '👨‍🏫', label: 'Lecturer' },
-  hacker: { id: 'hacker', emoji: '🧑‍💻', label: 'Hacker' },
+  student: { id: 'student', iconType: 'student', label: 'Student' },
+  alumni: { id: 'alumni', iconType: 'student', label: 'Alumni' },
+  lecturer: { id: 'lecturer', iconType: 'lecturer', label: 'Lecturer' },
+  hacker: { id: 'hacker', iconType: 'lecturer', label: 'Hacker' },
 };

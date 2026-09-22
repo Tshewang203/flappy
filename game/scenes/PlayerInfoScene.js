@@ -1,4 +1,4 @@
-import { GAME_WIDTH, GAME_HEIGHT, DEPARTMENTS, YEARS, COLORS, ROLES } from '../config/constants.js';
+import { GAME_WIDTH, GAME_HEIGHT, DEPARTMENTS, YEARS, BATCH_YEARS, COLORS, ROLES } from '../config/constants.js';
 import { getPlayer, savePlayer, clearPlayer, getAvatar } from '../utils/storage.js';
 import { openCameraCapture, openImageUpload, clearAvatar, buildFaceTexture } from '../utils/avatar.js';
 import { UIHelper } from '../utils/UIHelper.js';
@@ -29,6 +29,7 @@ export class PlayerInfoScene extends Phaser.Scene {
     this.role = existing?.role || ROLES.STUDENT;
     this.deptIndex = existing ? Math.max(0, DEPARTMENTS.indexOf(existing.department)) : 0;
     this.yearIndex = existing ? Math.max(0, YEARS.indexOf(existing.year)) : 0;
+    this.batchIndex = existing?.batch ? Math.max(0, BATCH_YEARS.indexOf(existing.batch)) : 0;
     this.avatarData = getAvatar();
 
     // ── Role toggle ──
@@ -53,6 +54,13 @@ export class PlayerInfoScene extends Phaser.Scene {
     }).setOrigin(0.5);
     this.yearArrows = this.createCycleArrows(335, () => this.cycleYear(-1), () => this.cycleYear(1));
 
+    // ── Batch (alumni only) ──
+    this.batchLabel = this.createLabel(305, 'Batch');
+    this.batchText = this.add.text(GAME_WIDTH / 2, 335, BATCH_YEARS[this.batchIndex], {
+      fontFamily: 'Inter', fontSize: '17px', color: COLORS.text,
+    }).setOrigin(0.5);
+    this.batchArrows = this.createCycleArrows(335, () => this.cycleBatch(-1), () => this.cycleBatch(1));
+
     // ── Avatar section (compact) ──
     this.createAvatarSection(370);
 
@@ -60,20 +68,20 @@ export class PlayerInfoScene extends Phaser.Scene {
       fontFamily: 'Inter', fontSize: '14px', color: '#e74c3c',
     }).setOrigin(0.5).setVisible(false).setDepth(100);
 
-    UIHelper.createButton(this, GAME_WIDTH / 2, 625, 'CONTINUE ▶', () => {
+    UIHelper.createButton(this, GAME_WIDTH / 2, 625, 'CONTINUE', () => {
       this.submitPlayer();
-    }, { depth: 100, width: 240 });
+    }, { depth: 100, width: 240, icon: 'forward', style: 'primary' });
 
     if (this.changePlayer) {
       UIHelper.createButton(this, GAME_WIDTH / 2, 685, 'Clear & Go Back', () => {
         clearPlayer();
         clearAvatar();
         UIHelper.goToScene(this, 'MenuScene');
-      }, { width: 200, height: 40, fontSize: '13px', depth: 100 });
+      }, { width: 200, height: 40, fontSize: '13px', depth: 100, icon: 'trash' });
     } else {
-      UIHelper.createButton(this, GAME_WIDTH / 2, 685, '← Back', () => {
+      UIHelper.createButton(this, GAME_WIDTH / 2, 685, 'Back', () => {
         UIHelper.goToScene(this, 'MenuScene');
-      }, { width: 160, height: 40, fontSize: '13px', depth: 100 });
+      }, { width: 160, height: 40, fontSize: '13px', depth: 100, icon: 'back' });
     }
 
     this.updateRoleVisibility();
@@ -87,27 +95,33 @@ export class PlayerInfoScene extends Phaser.Scene {
 
   createRoleToggle(y) {
     const roles = [
-      { id: ROLES.STUDENT, label: '🎓 Student' },
-      { id: ROLES.LECTURER, label: '👨‍🏫 Lecturer' },
+      { id: ROLES.STUDENT, label: 'Student', icon: 'student' },
+      { id: ROLES.ALUMNI, label: 'Alumni', icon: 'student' },
+      { id: ROLES.LECTURER, label: 'Lecturer', icon: 'lecturer' },
     ];
 
     this.roleButtons = [];
 
+    const spacing = 110;
+    const startX = GAME_WIDTH / 2 - spacing;
+
     roles.forEach((r, idx) => {
-      const x = GAME_WIDTH / 2 + (idx === 0 ? -80 : 80);
+      const x = startX + idx * spacing;
       const isActive = this.role === r.id;
 
-      const bg = this.add.rectangle(x, y, 150, 36, isActive ? 0xffffff : 0xffffff, isActive ? 0.22 : 0.08)
-        .setStrokeStyle(1, 0xffffff, isActive ? 0.55 : 0.3)
+      const bg = this.add.rectangle(x, y, 104, 38, isActive ? 0xffd700 : 0xf4f6fa, isActive ? 0.95 : 0.16)
+        .setStrokeStyle(2, isActive ? 0xffffff : 0xffffff, isActive ? 0.95 : 0.4)
         .setInteractive({ useHandCursor: true })
         .setDepth(10);
 
-      const label = this.add.text(x, y, r.label, {
-        fontFamily: 'Inter', fontSize: '14px',
-        color: isActive ? COLORS.gold : COLORS.textMuted,
-      }).setOrigin(0.5);
+      const iconGfx = UIHelper.drawIcon(this, r.icon, x - 30, y, 11, isActive ? COLORS.cstBlueDark : COLORS.text, 11);
 
-      this.roleButtons.push({ id: r.id, bg, label });
+      const label = this.add.text(x + 6, y, r.label, {
+        fontFamily: 'Inter', fontSize: '13px', fontStyle: isActive ? 'bold' : 'normal',
+        color: isActive ? COLORS.cstBlueDark : COLORS.text,
+      }).setOrigin(0.5).setDepth(11);
+
+      this.roleButtons.push({ id: r.id, bg, label, iconGfx, iconType: r.icon, x, y });
 
       bg.on('pointerup', () => {
         if (this.role === r.id) return;
@@ -119,28 +133,40 @@ export class PlayerInfoScene extends Phaser.Scene {
   }
 
   refreshRoleToggle() {
-    this.roleButtons?.forEach(({ id, bg, label }) => {
+    this.roleButtons?.forEach(({ id, bg, label, iconGfx, iconType, x, y }) => {
       const isActive = this.role === id;
-      bg.setFillStyle(0xffffff, isActive ? 0.22 : 0.08);
-      bg.setStrokeStyle(1, 0xffffff, isActive ? 0.55 : 0.3);
-      label.setColor(isActive ? COLORS.gold : COLORS.textMuted);
+      bg.setFillStyle(isActive ? 0xffd700 : 0xf4f6fa, isActive ? 0.95 : 0.16);
+      bg.setStrokeStyle(2, 0xffffff, isActive ? 0.95 : 0.4);
+      label.setColor(isActive ? COLORS.cstBlueDark : COLORS.text);
+      label.setFontStyle(isActive ? 'bold' : 'normal');
+      iconGfx.destroy();
+      const newIcon = UIHelper.drawIcon(this, iconType, x - 30, y, 11, isActive ? COLORS.cstBlueDark : COLORS.text, 11);
+      const entry = this.roleButtons.find((b) => b.id === id);
+      entry.iconGfx = newIcon;
     });
   }
 
   createCycleArrows(y, onLeft, onRight) {
-    const left = this.add.text(GAME_WIDTH / 2 - 140, y, '◀', {
-      fontSize: '16px', color: COLORS.silver,
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true }).on('pointerup', onLeft);
+    const makeArrowButton = (x, iconType, onClick) => {
+      const bg = this.add.circle(x, y, 16, 0xf4f6fa, 0.9)
+        .setStrokeStyle(2, COLORS.gold, 0.9)
+        .setInteractive({ useHandCursor: true })
+        .setDepth(9);
+      const icon = UIHelper.drawIcon(this, iconType, x, y, 10, COLORS.cstBlueDark, 10);
+      bg.on('pointerover', () => bg.setFillStyle(0xffffff, 1));
+      bg.on('pointerout', () => bg.setFillStyle(0xf4f6fa, 0.9));
+      bg.on('pointerup', onClick);
+      return { bg, icon };
+    };
 
-    const right = this.add.text(GAME_WIDTH / 2 + 140, y, '▶', {
-      fontSize: '16px', color: COLORS.silver,
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true }).on('pointerup', onRight);
+    const left = makeArrowButton(GAME_WIDTH / 2 - 140, 'back', onLeft);
+    const right = makeArrowButton(GAME_WIDTH / 2 + 140, 'forward', onRight);
 
     return { left, right };
   }
 
   createAvatarSection(y) {
-    this.add.text(GAME_WIDTH / 2, y, '📸 Play as Yourself', {
+    this.add.text(GAME_WIDTH / 2, y, 'PLAY AS YOURSELF', {
       fontFamily: 'Orbitron', fontSize: '14px', color: COLORS.silver,
     }).setOrigin(0.5);
 
@@ -156,33 +182,37 @@ export class PlayerInfoScene extends Phaser.Scene {
     if (this.avatarData) {
       this.loadAvatarPreview(this.avatarData, y + 45);
     } else {
-      this.avatarPlaceholder = this.add.text(GAME_WIDTH / 2, y + 45, '🙂', { fontSize: '28px' }).setOrigin(0.5);
+      this.avatarPlaceholder = UIHelper.drawIcon(this, 'student', GAME_WIDTH / 2, y + 45, 16, COLORS.silver, 1);
     }
 
     const btnY = y + 95;
     const btns = [
-      { label: this.avatarData ? '📷 Change Photo' : '📷 Take Photo', action: () => this.handleTakePhoto(y + 45) },
-      { label: '📁 Upload', action: () => this.handleUpload(y + 45) },
+      { label: this.avatarData ? 'Change Photo' : 'Take Photo', icon: 'camera', action: () => this.handleTakePhoto(y + 45) },
+      { label: 'Upload', icon: 'upload', action: () => this.handleUpload(y + 45) },
     ];
 
     if (this.avatarData) {
-      btns.push({ label: '🗑️ Remove Photo', action: () => this.handleRemoveAvatar(y + 45) });
+      btns.push({ label: 'Remove', icon: 'trash', action: () => this.handleRemoveAvatar(y + 45) });
     }
 
-    const spacing = 100;
+    const spacing = 105;
     const startX = GAME_WIDTH / 2 - ((btns.length - 1) * spacing) / 2;
 
     btns.forEach((btn, idx) => {
       const x = startX + idx * spacing;
-      const bg = this.add.rectangle(x, btnY, 90, 32, 0xffffff, 0.12)
-        .setStrokeStyle(1, 0xffffff, 0.4)
+      const bg = this.add.rectangle(x, btnY, 95, 34, 0xf4f6fa, 0.9)
+        .setStrokeStyle(2, COLORS.gold, 0.85)
         .setInteractive({ useHandCursor: true })
         .setDepth(10);
 
-      this.add.text(x, btnY, btn.label, {
-        fontFamily: 'Inter', fontSize: '11px', color: COLORS.text,
-      }).setOrigin(0.5);
+      UIHelper.drawIcon(this, btn.icon, x - 30, btnY, 9, COLORS.cstBlueDark, 11);
 
+      this.add.text(x + 8, btnY, btn.label, {
+        fontFamily: 'Inter', fontSize: '11px', fontStyle: 'bold', color: COLORS.cstBlueDark,
+      }).setOrigin(0.5).setDepth(11);
+
+      bg.on('pointerover', () => bg.setFillStyle(0xffffff, 1));
+      bg.on('pointerout', () => bg.setFillStyle(0xf4f6fa, 0.9));
       bg.on('pointerup', btn.action);
     });
   }
@@ -232,12 +262,24 @@ export class PlayerInfoScene extends Phaser.Scene {
     this.scene.restart({ changePlayer: this.changePlayer });
   }
 
+  static setArrowVisible(arrow, visible) {
+    arrow?.bg?.setVisible(visible);
+    arrow?.icon?.setVisible(visible);
+  }
+
   updateRoleVisibility() {
     const isStudent = this.role === ROLES.STUDENT;
+    const isAlumni = this.role === ROLES.ALUMNI;
+
     this.yearLabel?.setVisible(isStudent);
     this.yearText?.setVisible(isStudent);
-    this.yearArrows?.left?.setVisible(isStudent);
-    this.yearArrows?.right?.setVisible(isStudent);
+    PlayerInfoScene.setArrowVisible(this.yearArrows?.left, isStudent);
+    PlayerInfoScene.setArrowVisible(this.yearArrows?.right, isStudent);
+
+    this.batchLabel?.setVisible(isAlumni);
+    this.batchText?.setVisible(isAlumni);
+    PlayerInfoScene.setArrowVisible(this.batchArrows?.left, isAlumni);
+    PlayerInfoScene.setArrowVisible(this.batchArrows?.right, isAlumni);
   }
 
   createInputField(x, y, value, placeholder) {
@@ -281,6 +323,11 @@ export class PlayerInfoScene extends Phaser.Scene {
     this.yearText.setText(YEARS[this.yearIndex]);
   }
 
+  cycleBatch(dir = 1) {
+    this.batchIndex = (this.batchIndex + dir + BATCH_YEARS.length) % BATCH_YEARS.length;
+    this.batchText.setText(BATCH_YEARS[this.batchIndex]);
+  }
+
   submitPlayer() {
     const name = this.nameInput?.value?.trim();
     if (!name || name.length < 2) {
@@ -289,12 +336,22 @@ export class PlayerInfoScene extends Phaser.Scene {
       return;
     }
 
+    if (!DEPARTMENTS[this.deptIndex]) {
+      this.errorText.setText('Please select a department');
+      this.errorText.setVisible(true);
+      return;
+    }
+
+    const isStudent = this.role === ROLES.STUDENT;
+    const isAlumni = this.role === ROLES.ALUMNI;
+
     savePlayer({
       name,
       role: this.role,
       department: DEPARTMENTS[this.deptIndex],
-      year: this.role === ROLES.STUDENT ? YEARS[this.yearIndex] : 'Lecturer',
-      avatarStyle: this.role === ROLES.LECTURER ? 'lecturer' : 'student',
+      year: isStudent ? YEARS[this.yearIndex] : isAlumni ? null : 'Lecturer',
+      batch: isAlumni ? BATCH_YEARS[this.batchIndex] : null,
+      avatarStyle: this.role,
     });
 
     UIHelper.goToScene(this, 'ModeScene');

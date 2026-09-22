@@ -1,11 +1,18 @@
 import { GAME_WIDTH, GAME_HEIGHT, COLORS, MODES, DEPARTMENTS, ROLES } from '../config/constants.js';
-import { getPlayer } from '../utils/storage.js';
+import { getPlayer, getBestScores, getUnlockedAchievements } from '../utils/storage.js';
+import { ACHIEVEMENTS } from '../utils/achievements.js';
 import { getLeaderboard, isFirebaseConfigured } from '../firebase.js';
 import { UIHelper } from '../utils/UIHelper.js';
 
+// Shared horizontal layout — every section aligns to this margin/width so columns line up.
+const MARGIN = 20;
+const CONTENT_W = GAME_WIDTH - MARGIN * 2;
+const CENTER_X = GAME_WIDTH / 2;
+
 /**
- * LeaderboardScene — Mode-aware leaderboards with department/role filtering.
- * Fixed UI layout and column alignment.
+ * LeaderboardScene — Personal stats, achievements, and mode-aware ranked leaderboards.
+ * Merges the former Hall of Fame screen (personal best + achievements) with the
+ * mode/role-filtered leaderboard table into a single consistently-aligned page.
  */
 export class LeaderboardScene extends Phaser.Scene {
   constructor() {
@@ -15,6 +22,7 @@ export class LeaderboardScene extends Phaser.Scene {
   init(data) {
     this.initialModeId = data?.modeId || 'flappy_cst';
     this.initialDeptIndex = data?.deptIndex ?? null;
+    this.initialRoleFilter = data?.roleFilter ?? null;
   }
 
   create() {
@@ -24,32 +32,32 @@ export class LeaderboardScene extends Phaser.Scene {
     UIHelper.fadeIn(this);
 
     const logoKey = this.textures.exists('cst_logo') ? 'cst_logo' : 'logo';
-    this.add.image(GAME_WIDTH / 2, 45, logoKey).setDisplaySize(50, 50);
+    this.add.image(CENTER_X, 40, logoKey).setDisplaySize(46, 46).setDepth(5);
 
-    this.add
-      .text(GAME_WIDTH / 2, 95, '🏆 LEADERBOARD 🏆', {
-        fontFamily: 'Orbitron',
-        fontSize: '20px',
-        color: COLORS.gold,
-        fontStyle: 'bold',
-      })
-      .setOrigin(0.5)
-      .setDepth(5)
-      .setShadow(0, 0, '#ffd700', 4, true, true);
+    this.add.text(CENTER_X, 78, 'LEADERBOARD', {
+      fontFamily: 'Orbitron', fontSize: '20px', color: COLORS.gold, fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(5).setShadow(0, 0, '#ffd700', 4, true, true);
 
-    this.add
-      .text(GAME_WIDTH / 2, 118, 'Top 10 Performers', {
-        fontFamily: 'Inter',
-        fontSize: '11px',
-        color: COLORS.textMuted,
-      })
-      .setOrigin(0.5)
-      .setDepth(5);
-
-    this.selectedModeId = this.initialModeId;
-    this.createModeTabs();
+    this.add.text(CENTER_X, 100, 'Your Stats & Top Performers', {
+      fontFamily: 'Inter', fontSize: '11px', color: COLORS.textMuted,
+    }).setOrigin(0.5).setDepth(5);
 
     const player = getPlayer();
+
+    // ── Personal Best card ──
+    let y = 122;
+    y = this.renderPersonalBest(y);
+
+    // ── Achievements row ──
+    y = this.renderAchievements(y);
+    y += 14;
+
+    // ── Mode tabs ──
+    this.selectedModeId = this.initialModeId;
+    this.tabsY = y + 18;
+    this.createModeTabs(this.tabsY);
+    y = this.tabsY + 26;
+
     if (this.initialDeptIndex !== null) {
       this.selectedDeptIndex = this.initialDeptIndex;
     } else if (player?.department) {
@@ -58,46 +66,91 @@ export class LeaderboardScene extends Phaser.Scene {
     } else {
       this.selectedDeptIndex = 0;
     }
+    this.selectedRoleFilter = this.initialRoleFilter ?? player?.role ?? 'all';
 
-    this.deptLabel = this.add
-      .text(GAME_WIDTH / 2, 155, '', {
-        fontFamily: 'Orbitron',
-        fontSize: '12px',
-        color: COLORS.gold,
-        fontStyle: 'bold',
-      })
-      .setOrigin(0.5)
-      .setDepth(5);
+    this.deptRowY = y + 16;
+    this.deptLabel = this.add.text(CENTER_X, this.deptRowY, '', {
+      fontFamily: 'Orbitron', fontSize: '12px', color: COLORS.gold, fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(5);
 
-    // Scrollable entries area
-    this.entriesContainer = this.add.container(GAME_WIDTH / 2, 320);
-    this.statusText = this.add
-      .text(GAME_WIDTH / 2, 320, 'Loading...', {
-        fontFamily: 'Inter',
-        fontSize: '13px',
-        color: COLORS.textMuted,
-        align: 'center',
-      })
-      .setOrigin(0.5)
-      .setDepth(5);
+    this.roleTabsY = this.deptRowY + 30;
+    this.entriesTopY = this.roleTabsY + 38;
+
+    this.entriesContainer = this.add.container(CENTER_X, this.entriesTopY);
+    this.statusText = this.add.text(CENTER_X, this.entriesTopY, 'Loading...', {
+      fontFamily: 'Inter', fontSize: '13px', color: COLORS.textMuted, align: 'center',
+    }).setOrigin(0.5).setDepth(5);
 
     this.loadEntries();
 
-    UIHelper.createButton(
-      this,
-      GAME_WIDTH / 2,
-      GAME_HEIGHT - 50,
-      '←  BACK',
-      () => UIHelper.goToScene(this, 'MenuScene'),
-      { width: 160, height: 44, fontSize: '14px' }
-    );
+    UIHelper.createButton(this, CENTER_X, GAME_HEIGHT - 50, 'BACK', () => {
+      UIHelper.goToScene(this, 'MenuScene');
+    }, { width: 160, height: 44, fontSize: '14px', icon: 'back' });
   }
 
-  createModeTabs() {
+  /** Personal best score card — full content width, single row. Returns next y. */
+  renderPersonalBest(y) {
+    const bests = getBestScores();
+    const topLocal = Object.entries(bests).sort((a, b) => b[1] - a[1])[0];
+    if (!topLocal) return y;
+
+    const modeInfo = Object.values(MODES).find((m) => m.id === topLocal[0]);
+    const rowH = 46;
+    const rowY = y + rowH / 2;
+
+    this.add.rectangle(CENTER_X, rowY, CONTENT_W, rowH, 0xffd700, 0.16)
+      .setStrokeStyle(2, COLORS.gold, 0.75).setDepth(5);
+
+    UIHelper.drawIcon(this, modeInfo?.iconType || 'star', MARGIN + 12, rowY, 12, COLORS.gold, 6);
+
+    this.add.text(MARGIN + 34, rowY, 'PERSONAL BEST', {
+      fontFamily: 'Orbitron', fontSize: '10px', color: COLORS.textMuted,
+    }).setOrigin(0, 0.5).setDepth(6);
+
+    this.add.text(MARGIN + 34, rowY + 14, modeInfo?.name || topLocal[0], {
+      fontFamily: 'Inter', fontSize: '12px', color: COLORS.text,
+    }).setOrigin(0, 0.5).setDepth(6);
+
+    this.add.text(GAME_WIDTH - MARGIN - 12, rowY, String(topLocal[1]), {
+      fontFamily: 'Orbitron', fontSize: '20px', color: COLORS.gold, fontStyle: 'bold',
+    }).setOrigin(1, 0.5).setDepth(6);
+
+    return y + rowH + 10;
+  }
+
+  /** Achievement badges row — full content width. Returns next y. */
+  renderAchievements(y) {
+    const unlocked = getUnlockedAchievements();
+    const rowH = 40;
+    const rowY = y + rowH / 2;
+
+    this.add.rectangle(CENTER_X, rowY, CONTENT_W, rowH, 0x0a1e33, 0.5)
+      .setStrokeStyle(1, COLORS.gold, 0.4).setDepth(5);
+
+    this.add.text(MARGIN + 12, rowY, 'ACHIEVEMENTS', {
+      fontFamily: 'Orbitron', fontSize: '10px', color: COLORS.textMuted,
+    }).setOrigin(0, 0.5).setDepth(6);
+
+    if (unlocked.length > 0) {
+      const spacing = 28;
+      const startX = GAME_WIDTH - MARGIN - 12 - (unlocked.length - 1) * spacing;
+      unlocked.forEach((id, idx) => {
+        const iconType = ACHIEVEMENTS[id]?.iconType || 'star';
+        UIHelper.drawIcon(this, iconType, startX + idx * spacing, rowY, 11, COLORS.gold, 6);
+      });
+    } else {
+      this.add.text(GAME_WIDTH - MARGIN - 12, rowY, 'Play to earn badges', {
+        fontFamily: 'Inter', fontSize: '11px', color: COLORS.textMuted,
+      }).setOrigin(1, 0.5).setDepth(6);
+    }
+
+    return y + rowH + 8;
+  }
+
+  createModeTabs(y) {
     const modes = [MODES.FLAPPY_CST, MODES.JOURNEY, MODES.DEPARTMENT];
-    const tabW = (GAME_WIDTH - 40) / 3;
-    const startX = 20 + tabW / 2;
-    const y = 130;
+    const tabW = CONTENT_W / 3;
+    const startX = MARGIN + tabW / 2;
 
     this.tabBgs = [];
 
@@ -106,18 +159,19 @@ export class LeaderboardScene extends Phaser.Scene {
       const isActive = mode.id === this.selectedModeId;
 
       const bg = this.add
-        .rectangle(x, y, tabW - 8, 36, 0xffffff, isActive ? 0.3 : 0.08)
-        .setStrokeStyle(2, isActive ? COLORS.gold : COLORS.silver, isActive ? 0.9 : 0.2)
+        .rectangle(x, y, tabW - 8, 36, isActive ? 0xffd700 : 0x0a1e33, isActive ? 0.9 : 0.85)
+        .setStrokeStyle(2, isActive ? 0xffffff : COLORS.gold, isActive ? 0.95 : 0.6)
         .setInteractive({ useHandCursor: true })
         .setDepth(5);
 
-      const shortName = mode.emoji + ' ' + mode.name.split(' ')[0];
+      UIHelper.drawIcon(this, mode.iconType, x - 34, y, 8, isActive ? COLORS.cstBlueDark : '#ffffff', 6);
+
       this.add
-        .text(x, y, shortName, {
+        .text(x + 6, y, mode.shortName || mode.name, {
           fontFamily: 'Inter',
           fontSize: '10px',
           fontStyle: isActive ? 'bold' : 'normal',
-          color: isActive ? COLORS.gold : COLORS.textMuted,
+          color: isActive ? COLORS.cstBlueDark : '#ffffff',
         })
         .setOrigin(0.5)
         .setDepth(6);
@@ -131,48 +185,95 @@ export class LeaderboardScene extends Phaser.Scene {
     });
   }
 
+  createRoleFilterTabs(y) {
+    const options = [
+      { id: 'all', label: 'All', icon: null },
+      { id: ROLES.STUDENT, label: 'Students', icon: 'student' },
+      { id: ROLES.ALUMNI, label: 'Alumni', icon: 'student' },
+      { id: ROLES.LECTURER, label: 'Lecturers', icon: 'lecturer' },
+    ];
+
+    const tabW = CONTENT_W / options.length;
+    const startX = MARGIN + tabW / 2;
+
+    options.forEach((opt, idx) => {
+      const x = startX + idx * tabW;
+      const isActive = this.selectedRoleFilter === opt.id;
+
+      const bg = this.add
+        .rectangle(x, y, tabW - 6, 26, isActive ? 0xffd700 : 0x0a1e33, 0.85)
+        .setStrokeStyle(2, isActive ? 0xffffff : COLORS.gold, isActive ? 0.9 : 0.55)
+        .setInteractive({ useHandCursor: true })
+        .setDepth(5);
+
+      const textX = opt.icon ? x + 7 : x;
+      if (opt.icon) {
+        UIHelper.drawIcon(this, opt.icon, x - 30, y, 6, isActive ? COLORS.cstBlueDark : '#ffffff', 6);
+      }
+
+      this.add
+        .text(textX, y, opt.label, {
+          fontFamily: 'Inter',
+          fontSize: '9px',
+          fontStyle: isActive ? 'bold' : 'normal',
+          color: isActive ? COLORS.cstBlueDark : '#ffffff',
+        })
+        .setOrigin(0.5)
+        .setDepth(6);
+
+      bg.on('pointerdown', () => {
+        if (this.selectedRoleFilter === opt.id) return;
+        this.scene.restart({
+          modeId: this.selectedModeId,
+          deptIndex: this.selectedDeptIndex,
+          roleFilter: opt.id,
+        });
+      });
+    });
+  }
+
   async loadEntries() {
     this.entriesContainer.removeAll(true);
     this.statusText.setVisible(true);
     this.statusText.setText('Loading...');
 
-    const modeInfo = Object.values(MODES).find((m) => m.id === this.selectedModeId);
     const player = getPlayer();
+    let tableTopY = this.entriesTopY;
 
-    // Update department label
+    // Department mode gets extra controls: dept cycle arrows + role filter row.
     if (this.selectedModeId === 'department') {
       const dept = DEPARTMENTS[this.selectedDeptIndex];
-      this.deptLabel.setText(
-        player?.role === ROLES.LECTURER
-          ? '👨‍🏫 Lecturer Rankings'
-          : `🎓 ${dept} Students`
-      );
+      const roleLabels = { all: dept, student: `${dept} Students`, alumni: `${dept} Alumni`, lecturer: 'Lecturer Rankings' };
+      this.deptLabel.setText(roleLabels[this.selectedRoleFilter] || roleLabels.all);
 
-      // Dept cycle arrows for students view
-      if (player?.role !== ROLES.LECTURER) {
-        this.add
-          .text(40, 155, '◀', { fontSize: '14px', color: COLORS.gold, fontStyle: 'bold' })
-          .setOrigin(0.5)
+      if (this.selectedRoleFilter !== ROLES.LECTURER) {
+        const arrowBg = (x) => this.add.circle(x, this.deptRowY, 14, 0xf4f6fa, 0.9)
+          .setStrokeStyle(2, COLORS.gold, 0.9)
           .setInteractive({ useHandCursor: true })
-          .setDepth(5)
-          .on('pointerdown', () => {
-            const next = (this.selectedDeptIndex - 1 + DEPARTMENTS.length) % DEPARTMENTS.length;
-            this.scene.restart({ modeId: this.selectedModeId, deptIndex: next });
-          });
+          .setDepth(5);
 
-        this.add
-          .text(GAME_WIDTH - 40, 155, '▶', { fontSize: '14px', color: COLORS.gold, fontStyle: 'bold' })
-          .setOrigin(0.5)
-          .setInteractive({ useHandCursor: true })
-          .setDepth(5)
-          .on('pointerdown', () => {
-            const next = (this.selectedDeptIndex + 1) % DEPARTMENTS.length;
-            this.scene.restart({ modeId: this.selectedModeId, deptIndex: next });
-          });
+        const leftBg = arrowBg(MARGIN + 20);
+        UIHelper.drawIcon(this, 'back', MARGIN + 20, this.deptRowY, 8, COLORS.cstBlueDark, 6);
+        leftBg.on('pointerdown', () => {
+          const next = (this.selectedDeptIndex - 1 + DEPARTMENTS.length) % DEPARTMENTS.length;
+          this.scene.restart({ modeId: this.selectedModeId, deptIndex: next, roleFilter: this.selectedRoleFilter });
+        });
+
+        const rightBg = arrowBg(GAME_WIDTH - MARGIN - 20);
+        UIHelper.drawIcon(this, 'forward', GAME_WIDTH - MARGIN - 20, this.deptRowY, 8, COLORS.cstBlueDark, 6);
+        rightBg.on('pointerdown', () => {
+          const next = (this.selectedDeptIndex + 1) % DEPARTMENTS.length;
+          this.scene.restart({ modeId: this.selectedModeId, deptIndex: next, roleFilter: this.selectedRoleFilter });
+        });
       }
+
+      this.createRoleFilterTabs(this.roleTabsY);
     } else {
-      this.deptLabel.setText('🌍 Global Leaderboard');
+      this.deptLabel.setText('Global Leaderboard');
     }
+
+    this.entriesContainer.setPosition(CENTER_X, tableTopY);
+    this.statusText.setPosition(CENTER_X, tableTopY);
 
     if (!isFirebaseConfigured()) {
       this.statusText.setText('Firebase not configured.\nAdd credentials in firebase.js');
@@ -180,13 +281,10 @@ export class LeaderboardScene extends Phaser.Scene {
     }
 
     const filters = { modeId: this.selectedModeId, topN: 10 };
-
     if (this.selectedModeId === 'department') {
-      if (player?.role === ROLES.LECTURER) {
-        filters.role = ROLES.LECTURER;
-      } else {
-        filters.department = DEPARTMENTS[this.selectedDeptIndex];
-        filters.role = ROLES.STUDENT;
+      filters.department = DEPARTMENTS[this.selectedDeptIndex];
+      if (this.selectedRoleFilter !== 'all') {
+        filters.role = this.selectedRoleFilter;
       }
     }
 
@@ -199,118 +297,105 @@ export class LeaderboardScene extends Phaser.Scene {
       return;
     }
 
-    // Draw header with fixed layout
-    const headerY = -140;
-    const rowHeight = 38;
-    const contentWidth = GAME_WIDTH - 60;
+    this.renderEntriesTable(entries);
+  }
 
-    // Header background
+  renderEntriesTable(entries) {
+    const headerY = 0;
+    const rowHeight = 34;
+    const contentWidth = CONTENT_W;
+    const half = contentWidth / 2;
+
+    // Column x-positions, defined once so header and rows always line up.
+    const col = {
+      rank: -half + 22,
+      name: -half + 60,
+      dept: half - 175,
+      yearBatch: half - 95,
+      score: half - 20,
+    };
+
     this.entriesContainer.add(
-      this.add
-        .rectangle(0, headerY, contentWidth, 34, 0xffd700, 0.15)
-        .setStrokeStyle(2, COLORS.gold, 0.6)
+      this.add.rectangle(0, headerY, contentWidth, 30, 0xffd700, 0.22).setStrokeStyle(2, COLORS.gold, 0.8)
     );
 
-    // Header columns: Rank | Name | Dept | Year | Score
     const headers = [
-      { label: 'Rank', x: -contentWidth / 2 + 25, align: 0.5, w: 45 },
-      { label: 'Player', x: -contentWidth / 2 + 75, align: 0, w: 100 },
-      { label: 'Dept', x: 20, align: 0.5, w: 75 },
-      { label: 'Year', x: 90, align: 0.5, w: 70 },
-      { label: 'Score', x: contentWidth / 2 - 25, align: 1, w: 50 },
+      { label: 'Rank', x: col.rank, align: 0.5 },
+      { label: 'Player', x: col.name, align: 0 },
+      { label: 'Dept', x: col.dept, align: 0.5 },
+      { label: 'Yr/Batch', x: col.yearBatch, align: 0.5 },
+      { label: 'Score', x: col.score, align: 1 },
     ];
 
     headers.forEach((h) => {
       this.entriesContainer.add(
-        this.add
-          .text(h.x, headerY, h.label, {
-            fontFamily: 'Orbitron',
-            fontSize: '10px',
-            color: COLORS.gold,
-            fontStyle: 'bold',
-          })
-          .setOrigin(h.align, 0.5)
+        this.add.text(h.x, headerY, h.label, {
+          fontFamily: 'Orbitron', fontSize: '10px', color: COLORS.gold, fontStyle: 'bold',
+        }).setOrigin(h.align, 0.5)
       );
     });
 
-    // Render entries with proper alignment
     entries.forEach((entry, idx) => {
-      const rowY = headerY + 40 + idx * rowHeight;
-
-      // Row background
-      const bgAlpha = idx % 2 === 0 ? 0.06 : 0.02;
-      this.entriesContainer.add(
-        this.add
-          .rectangle(0, rowY, contentWidth, rowHeight - 2, 0xffffff, bgAlpha)
-          .setStrokeStyle(1, COLORS.gold, 0.08)
-      );
-
-      // Rank with medals
-      const medalEmojis = ['🥇', '🥈', '🥉'];
-      const rankText = idx < 3 ? medalEmojis[idx] : `#${idx + 1}`;
-      const rankColor = idx === 0 ? '#FFD700' : idx === 1 ? '#C0C0C0' : idx === 2 ? '#CD7F32' : COLORS.gold;
+      const rowY = headerY + 36 + idx * rowHeight;
+      const isTop3 = idx < 3;
 
       this.entriesContainer.add(
-        this.add.text(-contentWidth / 2 + 25, rowY, rankText, {
-          fontFamily: 'Orbitron',
-          fontSize: idx < 3 ? '14px' : '11px',
-          color: rankColor,
-          fontStyle: 'bold',
-        }).setOrigin(0.5, 0.5)
+        this.add.rectangle(0, rowY, contentWidth, rowHeight - 2, 0x0a1e33, idx % 2 === 0 ? 0.5 : 0.35)
+          .setStrokeStyle(1, COLORS.gold, 0.2)
       );
 
-      // Player name (truncate if needed)
+      if (isTop3) {
+        const rankColors = ['#FFD700', '#C0C0C0', '#CD7F32'];
+        this.entriesContainer.add(UIHelper.drawIcon(this, 'medal', col.rank, rowY, 12, rankColors[idx], 0));
+        this.entriesContainer.add(
+          this.add.text(col.rank, rowY, String(idx + 1), {
+            fontFamily: 'Orbitron', fontSize: '10px', color: '#1a1a2e', fontStyle: 'bold',
+          }).setOrigin(0.5)
+        );
+      } else {
+        this.entriesContainer.add(
+          this.add.text(col.rank, rowY, `#${idx + 1}`, {
+            fontFamily: 'Orbitron', fontSize: '11px', color: COLORS.gold, fontStyle: 'bold',
+          }).setOrigin(0.5)
+        );
+      }
+
+      const color = isTop3 ? COLORS.gold : COLORS.textMuted;
       const playerName = (entry.name || 'Anonymous').substring(0, 13);
       this.entriesContainer.add(
-        this.add.text(-contentWidth / 2 + 75, rowY, playerName, {
-          fontFamily: 'Inter',
-          fontSize: '10px',
-          color: idx < 3 ? COLORS.silverLight : COLORS.text,
-          fontStyle: idx < 3 ? 'bold' : 'normal',
+        this.add.text(col.name, rowY, playerName, {
+          fontFamily: 'Inter', fontSize: '10px',
+          color: isTop3 ? COLORS.silverLight : COLORS.text,
+          fontStyle: isTop3 ? 'bold' : 'normal',
         }).setOrigin(0, 0.5)
       );
 
-      // Department (truncate)
-      const deptShort = (entry.department || '—').substring(0, 6);
       this.entriesContainer.add(
-        this.add.text(20, rowY, deptShort, {
-          fontFamily: 'Inter',
-          fontSize: '9px',
-          color: COLORS.textMuted,
-        }).setOrigin(0.5, 0.5)
+        this.add.text(col.dept, rowY, (entry.department || '—').substring(0, 6), {
+          fontFamily: 'Inter', fontSize: '9px', color: COLORS.textMuted,
+        }).setOrigin(0.5)
       );
 
-      // Year
+      const yearOrBatch = entry.role === ROLES.ALUMNI
+        ? (entry.batch ? `'${String(entry.batch).slice(-2)}` : '—')
+        : (entry.year || '—');
       this.entriesContainer.add(
-        this.add.text(90, rowY, entry.year || '—', {
-          fontFamily: 'Inter',
-          fontSize: '9px',
-          color: COLORS.textMuted,
-        }).setOrigin(0.5, 0.5)
+        this.add.text(col.yearBatch, rowY, yearOrBatch, {
+          fontFamily: 'Inter', fontSize: '9px', color: COLORS.textMuted,
+        }).setOrigin(0.5)
       );
 
-      // Score
       this.entriesContainer.add(
-        this.add.text(contentWidth / 2 - 25, rowY, String(entry.score), {
-          fontFamily: 'Orbitron',
-          fontSize: '11px',
-          color: idx < 3 ? COLORS.gold : COLORS.silverLight,
-          fontStyle: idx < 3 ? 'bold' : 'normal',
+        this.add.text(col.score, rowY, String(entry.score), {
+          fontFamily: 'Orbitron', fontSize: '11px',
+          color: isTop3 ? COLORS.gold : COLORS.silverLight,
+          fontStyle: isTop3 ? 'bold' : 'normal',
         }).setOrigin(1, 0.5)
       );
     });
 
-    // Footer line
     this.entriesContainer.add(
-      this.add
-        .rectangle(
-          0,
-          headerY + 40 + entries.length * rowHeight + 4,
-          contentWidth,
-          1,
-          COLORS.gold,
-          0.4
-        )
+      this.add.rectangle(0, headerY + 36 + entries.length * rowHeight + 4, contentWidth, 1, COLORS.gold, 0.4)
     );
   }
 }

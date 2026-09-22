@@ -1,6 +1,7 @@
 import { GAME_WIDTH, GAME_HEIGHT, COLORS, QUIZ_BONUS, QUIZ_PENALTY, QUIZ_TIMER_SECONDS, QUIZ_STREAK_BONUS, QUIZ_STREAK_THRESHOLD } from '../config/constants.js';
 import { recordQuizAnswer } from '../utils/achievements.js';
 import { AudioManager } from '../utils/audio.js';
+import { UIHelper } from '../utils/UIHelper.js';
 
 /**
  * QuizScene — Separate UI for Journey (CST history) vs Department challenges.
@@ -41,38 +42,49 @@ export class QuizScene extends Phaser.Scene {
       .setStrokeStyle(2, 0x0094db, 0.6).setDepth(1);
 
     const isJourney = this.mode === 'journey';
-    const quizTitle = isJourney ? '🏛️ CST History Check' : `🎯 ${this.department} Challenge`;
+    const quizTitle = isJourney ? 'CST History Check' : `${this.department} Challenge`;
+    const quizIcon = isJourney ? 'pin' : 'target';
     const typeLabel = this.question.type === 'year_match' ? 'Year → Event' : 'Multiple Choice';
     const quizSubtitle = isJourney
       ? `Score ${this.score} — ${typeLabel}`
       : `${this.difficulty.charAt(0).toUpperCase() + this.difficulty.slice(1)} · ${typeLabel}`;
 
-    this.add.text(GAME_WIDTH / 2, cardY - cardH / 2 + 28, quizTitle, {
+    const titleText = this.add.text(GAME_WIDTH / 2 + 12, cardY - cardH / 2 + 28, quizTitle, {
       fontFamily: 'Orbitron', fontSize: '20px', color: COLORS.gold, fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(2);
+    UIHelper.drawIcon(this, quizIcon, GAME_WIDTH / 2 - titleText.width / 2 - 16, cardY - cardH / 2 + 28, 12, COLORS.gold, 2);
 
     this.add.text(GAME_WIDTH / 2, cardY - cardH / 2 + 54, quizSubtitle, {
       fontFamily: 'Inter', fontSize: '12px', color: COLORS.textMuted,
     }).setOrigin(0.5).setDepth(2);
 
     if (this.quizStreak >= 2) {
-      this.add.text(GAME_WIDTH / 2, cardY - cardH / 2 + 72, `🔥 Streak: ${this.quizStreak}`, {
+      const streakText = this.add.text(GAME_WIDTH / 2 + 10, cardY - cardH / 2 + 72, `Streak: ${this.quizStreak}`, {
         fontFamily: 'Orbitron', fontSize: '14px', color: COLORS.gold,
       }).setOrigin(0.5).setDepth(2);
+      UIHelper.drawIcon(this, 'flame', GAME_WIDTH / 2 - streakText.width / 2 - 12, cardY - cardH / 2 + 72, 9, COLORS.gold, 2);
     }
 
     this.timeLeft = QUIZ_TIMER_SECONDS;
-    this.timerText = this.add.text(GAME_WIDTH / 2, cardY - cardH / 2 + 92, `⏱ ${this.timeLeft}s`, {
+    const timerLabel = this.add.text(GAME_WIDTH / 2 + 8, cardY - cardH / 2 + 92, `${this.timeLeft}s`, {
       fontFamily: 'Orbitron', fontSize: '16px', color: COLORS.silver,
     }).setOrigin(0.5).setDepth(2);
+    this.timerIcon = UIHelper.drawIcon(this, 'clock', GAME_WIDTH / 2 - timerLabel.width / 2 - 12, cardY - cardH / 2 + 92, 10, COLORS.silver, 2);
+    this.timerText = timerLabel;
 
     this.timerEvent = this.time.addEvent({
       delay: 1000,
       repeat: QUIZ_TIMER_SECONDS - 1,
       callback: () => {
         this.timeLeft--;
-        this.timerText.setText(`⏱ ${this.timeLeft}s`);
-        if (this.timeLeft <= 5) this.timerText.setColor('#e74c3c');
+        this.timerText.setText(`${this.timeLeft}s`);
+        if (this.timeLeft <= 5 && !this._timerIconWarned) {
+          this._timerIconWarned = true;
+          this.timerText.setColor('#e74c3c');
+          const { x, y } = this.timerIcon;
+          this.timerIcon.destroy();
+          this.timerIcon = UIHelper.drawIcon(this, 'clock', x, y, 10, '#e74c3c', 2);
+        }
         if (this.timeLeft <= 0) this.finishQuiz(false);
       },
     });
@@ -109,10 +121,23 @@ export class QuizScene extends Phaser.Scene {
       });
     });
 
-    this.add.text(GAME_WIDTH / 2, cardY + cardH / 2 - 22,
-      `✅ +${QUIZ_BONUS} pts  ·  🔥 Streak bonus after ${QUIZ_STREAK_THRESHOLD}  ·  ❌ -${QUIZ_PENALTY}`, {
-        fontFamily: 'Inter', fontSize: '12px', color: COLORS.textMuted,
-      }).setOrigin(0.5).setDepth(2);
+    const legendY = cardY + cardH / 2 - 22;
+    const legendParts = [
+      { icon: 'check', text: `+${QUIZ_BONUS} pts` },
+      { icon: 'flame', text: `Streak bonus after ${QUIZ_STREAK_THRESHOLD}` },
+      { icon: 'cross', text: `-${QUIZ_PENALTY}` },
+    ];
+    const legendTexts = legendParts.map((p) => this.add.text(0, 0, p.text, {
+      fontFamily: 'Inter', fontSize: '12px', color: COLORS.textMuted,
+    }));
+    const gap = 22;
+    const totalW = legendTexts.reduce((sum, t) => sum + t.width, 0) + gap * (legendParts.length - 1) + legendParts.length * 18;
+    let curX = GAME_WIDTH / 2 - totalW / 2;
+    legendParts.forEach((p, idx) => {
+      UIHelper.drawIcon(this, p.icon, curX + 8, legendY, 7, COLORS.textMuted, 2);
+      legendTexts[idx].setPosition(curX + 18, legendY - legendTexts[idx].height / 2).setDepth(2);
+      curX += 18 + legendTexts[idx].width + gap;
+    });
 
     this.answered = false;
     this.cameras.main.fadeIn(200);
@@ -143,16 +168,19 @@ export class QuizScene extends Phaser.Scene {
     const isJourney = this.mode === 'journey';
 
     const resultMsg = correct
-      ? (streakBonus ? `✅ Nice! +${QUIZ_BONUS} & streak bonus!` : `✅ Correct! +${QUIZ_BONUS} pts`)
-      : `❌ Missed it — −${QUIZ_PENALTY} pts`;
+      ? (streakBonus ? `Nice! +${QUIZ_BONUS} & streak bonus!` : `Correct! +${QUIZ_BONUS} pts`)
+      : `Missed it — −${QUIZ_PENALTY} pts`;
 
-    const resultText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 210, resultMsg, {
+    const resultY = GAME_HEIGHT / 2 + 210;
+    const resultText = this.add.text(GAME_WIDTH / 2 + 14, resultY, resultMsg, {
       fontFamily: 'Orbitron', fontSize: '20px',
       color: correct ? '#2ecc71' : '#e74c3c', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(10).setAlpha(0);
+    const resultIcon = UIHelper.drawIcon(this, correct ? 'check' : 'cross', GAME_WIDTH / 2 - resultText.width / 2 - 16, resultY, 12, correct ? '#2ecc71' : '#e74c3c', 10)
+      .setAlpha(0);
 
     this.tweens.add({
-      targets: resultText, alpha: 1,
+      targets: [resultText, resultIcon], alpha: 1,
       scaleX: { from: 0.5, to: 1 }, scaleY: { from: 0.5, to: 1 },
       duration: 300, ease: 'Back.easeOut',
     });
