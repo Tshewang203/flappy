@@ -25,3 +25,6 @@ npm-debug.log*
 
 # Project notes (not part of the codebase)
 decrip.docx
+
+# Local HTTPS dev certificate (serve-https.cjs)
+.certs/
