@@ -51,7 +51,7 @@ export function isFirebaseConfigured() {
 /**
  * Submit a score to the leaderboard.
  */
-export async function submitScore({ name, role, department, year, score, mode }) {
+export async function submitScore({ name, role, department, year, batch, score, mode }) {
   if (!initFirebase() || !isFirebaseConfigured()) {
     console.warn('Firebase not configured — score not submitted');
     return null;
@@ -62,7 +62,8 @@ export async function submitScore({ name, role, department, year, score, mode })
       name,
       role: role || 'student',
       department,
-      year: year || 'Lecturer',
+      year: year || null,
+      batch: batch || null,
       score,
       mode,
       timestamp: serverTimestamp(),

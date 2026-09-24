@@ -35,7 +35,7 @@ export class IntroScene extends Phaser.Scene {
       fontFamily: 'Inter', fontSize: '16px', color: COLORS.gold,
     }).setOrigin(0.5).setDepth(10).setAlpha(0);
 
-    const jubilee = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 105, '🥈 25th Silver Jubilee 🥈', {
+    const jubilee = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 105, '25th Silver Jubilee', {
       fontFamily: 'Orbitron', fontSize: '15px', color: COLORS.silver,
     }).setOrigin(0.5).setDepth(10).setAlpha(0);
 

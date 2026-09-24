@@ -9,7 +9,6 @@ import { QuizScene } from './scenes/QuizScene.js';
 import { LegacyScene } from './scenes/LegacyScene.js';
 import { UIScene } from './scenes/UIScene.js';
 import { LeaderboardScene } from './scenes/LeaderboardScene.js';
-import { HallOfFameScene } from './scenes/HallOfFameScene.js';
 import { GameOverScene } from './scenes/GameOverScene.js';
 import { initFirebase } from './firebase.js';
 
@@ -43,7 +42,6 @@ const config = {
     LegacyScene,
     UIScene,
     LeaderboardScene,
-    HallOfFameScene,
     GameOverScene,
   ],
   input: { activePointers: 3 },

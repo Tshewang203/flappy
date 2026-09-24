@@ -132,12 +132,12 @@ export class GameScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-SPACE', this._jumpHandler);
 
     const modeTag = this.modeInfo?.classic
-      ? '🛩️ Classic Flappy — Just Fly'
+      ? 'Classic Flappy — Just Fly'
       : this.mode === 'journey'
-        ? '🏛️ CST trivia at 5, 15 & 25 pts'
+        ? 'CST trivia at 5, 15 & 25 pts'
         : this.mode === 'story'
-          ? '📖 Reach the score to complete each level'
-          : `🎯 ${this.player?.department || 'Dept'} — surprise quizzes!`;
+          ? 'Reach the score to complete each level'
+          : `${this.player?.department || 'Dept'} — surprise quizzes!`;
     this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 95, modeTag, {
       fontFamily: 'Inter', fontSize: '12px', color: 'rgba(255,255,255,0.55)',
     }).setOrigin(0.5).setDepth(20);
@@ -334,12 +334,12 @@ export class GameScene extends Phaser.Scene {
     });
 
     if (options.updateEraText && this.eraText) {
-      this.eraText.setText(`✦ ${milestone.era} ✦`);
+      this.eraText.setText(milestone.era.toUpperCase());
       this.cameras.main.flash(400, 255, 215, 0, false);
     }
 
     const loc = CAMPUS_LOCATIONS[milestone.campusKey];
-    if (loc && this.campusLabel) this.campusLabel.setText(`📍 ${loc}`);
+    if (loc && this.campusLabel) this.campusLabel.setText(loc);
 
     if (options.emitEraChange) {
       this.events.emit('eraChange', milestone);
@@ -514,13 +514,13 @@ export class GameScene extends Phaser.Scene {
 
   triggerSurpriseReward() {
     const rewards = [
-      { label: '🎉 Lucky Shield!', action: () => { this.hasShield = true; this.shieldFx.setVisible(true); } },
-      { label: '🎓 Faculty Bonus!', action: () => { this.scoreMultiplier = 2; this.time.delayedCall(5000, () => { this.scoreMultiplier = 1; }); } },
-      { label: '⚡ Speed Surge!', action: () => { this.gameSpeed = Math.min(this.config.maxSpeed, this.gameSpeed + 40); } },
+      { label: 'Lucky Shield!', icon: 'shield', action: () => { this.hasShield = true; this.shieldFx.setVisible(true); } },
+      { label: 'Faculty Bonus!', icon: 'star', action: () => { this.scoreMultiplier = 2; this.time.delayedCall(5000, () => { this.scoreMultiplier = 1; }); } },
+      { label: 'Speed Surge!', icon: 'target', action: () => { this.gameSpeed = Math.min(this.config.maxSpeed, this.gameSpeed + 40); } },
     ];
     const reward = Phaser.Utils.Array.GetRandom(rewards);
     reward.action();
-    this.events.emit('powerUpCollected', { type: 'surprise', label: reward.label });
+    this.events.emit('powerUpCollected', { type: 'surprise', label: reward.label, icon: reward.icon });
     AudioManager.play(this, 'powerup');
   }
 
@@ -605,10 +605,7 @@ export class GameScene extends Phaser.Scene {
       .setDisplaySize(PIPE_WIDTH + 8, 34).setDepth(3);
     bottomPipe.setData('cap', bottomCap);
 
-    const emojiMap = { book: '📚', exam: '📝', assignment: '📋' };
-    const label = this.add.text(GAME_WIDTH + 50, gapCenter - this.pipeGap / 2 - 20, emojiMap[obstacleType] || '📚', {
-      fontSize: '24px',
-    }).setOrigin(0.5).setDepth(3);
+    const label = UIHelper.drawIcon(this, obstacleType || 'book', GAME_WIDTH + 50, gapCenter - this.pipeGap / 2 - 20, 13, '#ffffff', 3);
     this.obstacleLabels.add(label);
 
     if (Math.random() < this.config.powerUpChance) {
@@ -628,9 +625,8 @@ export class GameScene extends Phaser.Scene {
       targets: pu, y: pu.y + 10, duration: 800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
     });
 
-    const emoji = this.add.text(x, pu.y, POWER_UPS[type].emoji, { fontSize: '18px' })
-      .setOrigin(0.5).setDepth(5);
-    pu.setData('emojiRef', emoji);
+    const icon = UIHelper.drawIcon(this, POWER_UPS[type].iconType, x, pu.y, 10, '#ffffff', 5);
+    pu.setData('emojiRef', icon);
   }
 
   collectPowerUp(bird, powerUp) {
@@ -640,7 +636,7 @@ export class GameScene extends Phaser.Scene {
     powerUp.destroy();
     AudioManager.play(this, 'powerup');
     this.activatePowerUp(type);
-    this.events.emit('powerUpCollected', { type, label: POWER_UPS[type].label });
+    this.events.emit('powerUpCollected', { type, label: POWER_UPS[type].label, icon: POWER_UPS[type].iconType });
   }
 
   activatePowerUp(type) {

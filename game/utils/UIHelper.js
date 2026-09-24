@@ -8,7 +8,6 @@ export const VIDEO_SCENES = [
   'PlayerInfoScene',
   'ModeScene',
   'LeaderboardScene',
-  'HallOfFameScene',
 ];
 
 /**
@@ -56,75 +55,90 @@ export class UIHelper {
       width = 220,
       height = 52,
       fontSize = '20px',
-      color = COLORS.gold,
+      color = COLORS.cstBlueDark,
       depth = 10,
       playSound = true,
+      icon = null, // e.g. 'play', 'replay', 'home', 'trophy' — see UIHelper.drawIcon
       style = 'default', // 'default', 'primary', 'secondary'
     } = options;
 
-    // Style configurations
+    // Style configurations — solid, high-contrast fills so buttons read clearly over video/game backgrounds
     const styleConfigs = {
-      default: { 
-        fillColor: 0xffffff, 
-        fillAlpha: 0.12, 
-        strokeColor: 0xffffff, 
-        strokeAlpha: 0.45,
+      default: {
+        fillColor: 0xf4f6fa,
+        fillAlpha: 0.95,
+        strokeColor: COLORS.gold,
+        strokeAlpha: 1,
         hoverFill: 0xffffff,
-        hoverAlpha: 0.22,
+        hoverAlpha: 1,
+        textColor: COLORS.cstBlueDark,
       },
-      primary: { 
-        fillColor: 0x0094db, 
-        fillAlpha: 0.35, 
-        strokeColor: COLORS.gold, 
-        strokeAlpha: 0.8,
-        hoverFill: 0x0094db,
-        hoverAlpha: 0.55,
+      primary: {
+        fillColor: 0xffd700,
+        fillAlpha: 0.97,
+        strokeColor: 0xffffff,
+        strokeAlpha: 0.9,
+        hoverFill: 0xffe14d,
+        hoverAlpha: 1,
+        textColor: COLORS.cstBlueDark,
       },
-      secondary: { 
-        fillColor: 0x00aa77, 
-        fillAlpha: 0.25, 
-        strokeColor: 0x00ff88, 
-        strokeAlpha: 0.6,
-        hoverFill: 0x00aa77,
-        hoverAlpha: 0.45,
+      secondary: {
+        fillColor: 0x1fbf7a,
+        fillAlpha: 0.95,
+        strokeColor: 0xffffff,
+        strokeAlpha: 0.85,
+        hoverFill: 0x2ad98e,
+        hoverAlpha: 1,
+        textColor: '#0a2e20',
       },
     };
 
     const config = styleConfigs[style] || styleConfigs.default;
+    const textColor = options.color || config.textColor;
+
+    // Drop shadow for lift against busy backgrounds
+    const shadow = scene.add
+      .rectangle(x + 2, y + 3, width, height, 0x000000, 0.35)
+      .setDepth(depth - 1);
 
     const bg = scene.add
       .rectangle(x, y, width, height, config.fillColor, config.fillAlpha)
-      .setStrokeStyle(2, config.strokeColor, config.strokeAlpha)
+      .setStrokeStyle(3, config.strokeColor, config.strokeAlpha)
       .setInteractive({ useHandCursor: true })
       .setDepth(depth);
 
+    const hasIcon = Boolean(icon);
+    const textX = hasIcon ? x + 12 : x;
+
     const text = scene.add
-      .text(x, y, label, {
+      .text(textX, y, label, {
         fontFamily: 'Orbitron',
         fontSize,
-        color,
+        color: textColor,
         fontStyle: 'bold',
       })
       .setOrigin(0.5)
       .setDepth(depth + 1)
       .setInteractive({ useHandCursor: true });
 
-    // Add glow effect on hover
-    const glowShadow = scene.make.graphics({ x: 0, y: 0, add: false });
-    glowShadow.setDepth(depth - 1);
+    let iconGfx = null;
+    if (hasIcon) {
+      const iconX = textX - text.width / 2 - 16;
+      iconGfx = UIHelper.drawIcon(scene, icon, iconX, y, Math.min(height * 0.4, 16), textColor, depth + 1);
+    }
 
     bg.on('pointerover', () => {
       bg.setFillStyle(config.hoverFill, config.hoverAlpha);
-      bg.setScale(1.06);
-      text.setScale(1.06);
-      text.setColor(COLORS.gold);
+      bg.setScale(1.05);
+      text.setScale(1.05);
+      iconGfx?.setScale(1.05);
     });
 
     bg.on('pointerout', () => {
       bg.setFillStyle(config.fillColor, config.fillAlpha);
       bg.setScale(1);
       text.setScale(1);
-      text.setColor(color);
+      iconGfx?.setScale(1);
     });
 
     const fire = (pointer, localX, localY, event) => {
@@ -137,7 +151,264 @@ export class UIHelper {
 
     bg.on('pointerup', fire);
     text.on('pointerup', fire);
-    return { bg, text };
+    scene.events.once('shutdown', () => shadow.destroy());
+    return { bg, text, shadow, icon: iconGfx };
+  }
+
+  /**
+   * Draw a small vector icon glyph at (x, y) using Phaser Graphics — avoids emoji font rendering.
+   * @param {Phaser.Scene} scene
+   * @param {string} type - icon key (see switch below)
+   * @param {number} x
+   * @param {number} y
+   * @param {number} size - roughly half-height of the glyph
+   * @param {string|number} color - hex string or number
+   * @param {number} depth
+   */
+  static drawIcon(scene, type, x, y, size = 12, color = COLORS.gold, depth = 10) {
+    const colorNum = typeof color === 'string' ? Phaser.Display.Color.HexStringToColor(color).color : color;
+    const g = scene.add.graphics({ x, y }).setDepth(depth);
+    g.lineStyle(Math.max(2, size * 0.16), colorNum, 1);
+    g.fillStyle(colorNum, 1);
+
+    switch (type) {
+      case 'play': {
+        g.fillTriangle(-size * 0.4, -size * 0.6, -size * 0.4, size * 0.6, size * 0.6, 0);
+        break;
+      }
+      case 'replay': {
+        g.beginPath();
+        g.arc(0, 0, size * 0.6, Phaser.Math.DegToRad(-40), Phaser.Math.DegToRad(230), false);
+        g.strokePath();
+        g.fillTriangle(size * 0.45, -size * 0.75, size * 0.9, -size * 0.35, size * 0.3, -size * 0.15);
+        break;
+      }
+      case 'home': {
+        g.beginPath();
+        g.moveTo(-size * 0.7, 0);
+        g.lineTo(0, -size * 0.6);
+        g.lineTo(size * 0.7, 0);
+        g.strokePath();
+        g.fillRect(-size * 0.4, 0, size * 0.8, size * 0.6);
+        break;
+      }
+      case 'back': {
+        g.beginPath();
+        g.moveTo(size * 0.35, -size * 0.6);
+        g.lineTo(-size * 0.35, 0);
+        g.lineTo(size * 0.35, size * 0.6);
+        g.strokePath();
+        break;
+      }
+      case 'forward': {
+        g.beginPath();
+        g.moveTo(-size * 0.35, -size * 0.6);
+        g.lineTo(size * 0.35, 0);
+        g.lineTo(-size * 0.35, size * 0.6);
+        g.strokePath();
+        break;
+      }
+      case 'trophy': {
+        g.fillRect(-size * 0.35, -size * 0.5, size * 0.7, size * 0.6);
+        g.beginPath();
+        g.arc(-size * 0.35, -size * 0.35, size * 0.25, Phaser.Math.DegToRad(90), Phaser.Math.DegToRad(270));
+        g.strokePath();
+        g.beginPath();
+        g.arc(size * 0.35, -size * 0.35, size * 0.25, Phaser.Math.DegToRad(-90), Phaser.Math.DegToRad(90));
+        g.strokePath();
+        g.fillRect(-size * 0.15, size * 0.1, size * 0.3, size * 0.3);
+        g.fillRect(-size * 0.35, size * 0.4, size * 0.7, size * 0.12);
+        break;
+      }
+      case 'medal': {
+        g.fillCircle(0, size * 0.1, size * 0.5);
+        g.lineStyle(Math.max(2, size * 0.14), colorNum, 1);
+        g.strokeCircle(0, size * 0.1, size * 0.5);
+        break;
+      }
+      case 'student': {
+        // graduation cap, viewed from above: diamond board + center boss + hanging tassel
+        g.fillTriangle(-size * 0.75, 0, 0, -size * 0.42, size * 0.75, 0);
+        g.fillTriangle(-size * 0.75, 0, 0, size * 0.42, size * 0.75, 0);
+        g.fillCircle(0, 0, size * 0.12);
+        g.lineStyle(Math.max(2, size * 0.16), colorNum, 1);
+        g.lineBetween(size * 0.4, size * 0.05, size * 0.4, size * 0.55);
+        g.fillCircle(size * 0.4, size * 0.6, size * 0.09);
+        break;
+      }
+      case 'lecturer': {
+        // person silhouette: round head + shoulders arc, well within bounds
+        g.fillCircle(0, -size * 0.38, size * 0.34);
+        g.beginPath();
+        g.arc(0, size * 0.62, size * 0.58, Phaser.Math.DegToRad(200), Phaser.Math.DegToRad(340), false);
+        g.closePath();
+        g.fillPath();
+        break;
+      }
+      case 'sound-on': {
+        g.fillRect(-size * 0.6, -size * 0.25, size * 0.3, size * 0.5);
+        g.fillTriangle(-size * 0.3, -size * 0.25, -size * 0.3, size * 0.25, size * 0.15, -size * 0.55);
+        g.fillTriangle(-size * 0.3, -size * 0.25, -size * 0.3, size * 0.25, size * 0.15, size * 0.55);
+        g.beginPath();
+        g.arc(size * 0.05, 0, size * 0.55, Phaser.Math.DegToRad(-45), Phaser.Math.DegToRad(45));
+        g.strokePath();
+        break;
+      }
+      case 'sound-off': {
+        g.fillRect(-size * 0.6, -size * 0.25, size * 0.3, size * 0.5);
+        g.fillTriangle(-size * 0.3, -size * 0.25, -size * 0.3, size * 0.25, size * 0.15, -size * 0.55);
+        g.fillTriangle(-size * 0.3, -size * 0.25, -size * 0.3, size * 0.25, size * 0.15, size * 0.55);
+        g.lineBetween(size * 0.25, -size * 0.4, size * 0.75, size * 0.4);
+        g.lineBetween(size * 0.75, -size * 0.4, size * 0.25, size * 0.4);
+        break;
+      }
+      case 'camera': {
+        g.strokeRoundedRect(-size * 0.7, -size * 0.35, size * 1.4, size * 0.75, size * 0.12);
+        g.lineBetween(-size * 0.25, -size * 0.35, -size * 0.1, -size * 0.55);
+        g.lineBetween(-size * 0.1, -size * 0.55, size * 0.15, -size * 0.55);
+        g.lineBetween(size * 0.15, -size * 0.55, size * 0.3, -size * 0.35);
+        g.strokeCircle(0, 0.05 * size, size * 0.22);
+        break;
+      }
+      case 'upload': {
+        g.lineBetween(0, size * 0.5, 0, -size * 0.15);
+        g.fillTriangle(-size * 0.35, -size * 0.1, size * 0.35, -size * 0.1, 0, -size * 0.6);
+        g.lineBetween(-size * 0.5, size * 0.55, size * 0.5, size * 0.55);
+        break;
+      }
+      case 'trash': {
+        g.strokeRect(-size * 0.35, -size * 0.15, size * 0.7, size * 0.65);
+        g.lineBetween(-size * 0.55, -size * 0.35, size * 0.55, -size * 0.35);
+        g.lineBetween(-size * 0.2, -size * 0.35, -size * 0.15, -size * 0.55);
+        g.lineBetween(size * 0.2, -size * 0.35, size * 0.15, -size * 0.55);
+        g.lineBetween(-size * 0.15, -size * 0.55, size * 0.15, -size * 0.55);
+        break;
+      }
+      case 'check': {
+        g.lineStyle(Math.max(3, size * 0.22), colorNum, 1);
+        g.beginPath();
+        g.moveTo(-size * 0.5, 0);
+        g.lineTo(-size * 0.1, size * 0.4);
+        g.lineTo(size * 0.55, -size * 0.4);
+        g.strokePath();
+        break;
+      }
+      case 'cross': {
+        g.lineStyle(Math.max(3, size * 0.22), colorNum, 1);
+        g.lineBetween(-size * 0.45, -size * 0.45, size * 0.45, size * 0.45);
+        g.lineBetween(size * 0.45, -size * 0.45, -size * 0.45, size * 0.45);
+        break;
+      }
+      case 'star': {
+        const points = [];
+        const spikes = 5;
+        const outer = size * 0.62;
+        const inner = size * 0.26;
+        for (let i = 0; i < spikes * 2; i++) {
+          const r = i % 2 === 0 ? outer : inner;
+          const a = (Math.PI / spikes) * i - Math.PI / 2;
+          points.push(new Phaser.Math.Vector2(Math.cos(a) * r, Math.sin(a) * r));
+        }
+        g.fillPoints(points, true);
+        break;
+      }
+      case 'flame': {
+        g.beginPath();
+        g.moveTo(0, size * 0.6);
+        g.lineTo(-size * 0.4, size * 0.05);
+        g.lineTo(-size * 0.15, size * 0.05);
+        g.lineTo(-size * 0.3, -size * 0.6);
+        g.lineTo(size * 0.2, -size * 0.05);
+        g.lineTo(0, -size * 0.05);
+        g.lineTo(size * 0.4, size * 0.15);
+        g.closePath();
+        g.fillPath();
+        break;
+      }
+      case 'target': {
+        g.lineStyle(Math.max(2, size * 0.14), colorNum, 1);
+        g.strokeCircle(0, 0, size * 0.6);
+        g.strokeCircle(0, 0, size * 0.3);
+        g.fillCircle(0, 0, size * 0.08);
+        break;
+      }
+      case 'book': {
+        g.fillRoundedRect(-size * 0.55, -size * 0.5, size * 0.5, size, size * 0.06);
+        g.fillRoundedRect(size * 0.05, -size * 0.5, size * 0.5, size, size * 0.06);
+        g.lineBetween(0, -size * 0.45, 0, size * 0.45);
+        break;
+      }
+      case 'exam': {
+        g.strokeRoundedRect(-size * 0.45, -size * 0.6, size * 0.9, size * 1.2, size * 0.08);
+        g.lineBetween(-size * 0.25, -size * 0.25, size * 0.25, -size * 0.25);
+        g.lineBetween(-size * 0.25, size * 0.05, size * 0.25, size * 0.05);
+        g.lineBetween(-size * 0.25, size * 0.35, size * 0.05, size * 0.35);
+        break;
+      }
+      case 'assignment': {
+        g.strokeRoundedRect(-size * 0.45, -size * 0.55, size * 0.9, size * 1.1, size * 0.08);
+        g.fillStyle(colorNum, 1);
+        g.fillTriangle(-size * 0.2, size * 0.05, -size * 0.05, size * 0.2, size * 0.3, -size * 0.2);
+        g.lineStyle(Math.max(2, size * 0.16), colorNum, 1);
+        break;
+      }
+      case 'pin': {
+        g.fillCircle(0, -size * 0.15, size * 0.4);
+        g.fillTriangle(-size * 0.28, size * 0.05, size * 0.28, size * 0.05, 0, size * 0.65);
+        break;
+      }
+      case 'clock': {
+        g.lineStyle(Math.max(2, size * 0.14), colorNum, 1);
+        g.strokeCircle(0, 0, size * 0.6);
+        g.lineBetween(0, 0, 0, -size * 0.35);
+        g.lineBetween(0, 0, size * 0.28, size * 0.1);
+        break;
+      }
+      case 'shield': {
+        g.beginPath();
+        g.moveTo(0, -size * 0.65);
+        g.lineTo(size * 0.55, -size * 0.35);
+        g.lineTo(size * 0.5, size * 0.15);
+        g.lineTo(0, size * 0.65);
+        g.lineTo(-size * 0.5, size * 0.15);
+        g.lineTo(-size * 0.55, -size * 0.35);
+        g.closePath();
+        g.fillPath();
+        break;
+      }
+      case 'signal': {
+        g.fillRect(-size * 0.55, size * 0.25, size * 0.25, size * 0.3);
+        g.fillRect(-size * 0.15, -size * 0.05, size * 0.25, size * 0.6);
+        g.fillRect(size * 0.25, -size * 0.4, size * 0.25, size * 0.95);
+        break;
+      }
+      case 'coffee': {
+        g.strokeRoundedRect(-size * 0.5, -size * 0.35, size * 0.85, size * 0.75, size * 0.1);
+        g.beginPath();
+        g.arc(size * 0.42, -size * 0.05, size * 0.22, Phaser.Math.DegToRad(-70), Phaser.Math.DegToRad(90));
+        g.strokePath();
+        break;
+      }
+      default:
+        g.fillCircle(0, 0, size * 0.5);
+    }
+
+    return g;
+  }
+
+  /** Draw a rank medal icon (gold/silver/bronze for top 3, plain number badge otherwise). */
+  static drawRankBadge(scene, x, y, rank, depth = 10) {
+    const rankColors = ['#FFD700', '#C0C0C0', '#CD7F32'];
+    if (rank <= 3) {
+      const color = rankColors[rank - 1];
+      UIHelper.drawIcon(scene, 'medal', x, y, 11, color, depth);
+      return scene.add.text(x, y, String(rank), {
+        fontFamily: 'Orbitron', fontSize: '10px', color: '#1a1a2e', fontStyle: 'bold',
+      }).setOrigin(0.5).setDepth(depth + 1);
+    }
+    return scene.add.text(x, y, `#${rank}`, {
+      fontFamily: 'Orbitron', fontSize: '11px', color: COLORS.gold, fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth);
   }
 
   static createTitle(scene, y, mainText, subText = '', depth = 10) {

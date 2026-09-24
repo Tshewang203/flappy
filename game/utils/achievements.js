@@ -10,12 +10,12 @@ function readJSON(key, fallback = null) {
 }
 
 export const ACHIEVEMENTS = {
-  first_flight: { id: 'first_flight', emoji: '🎯', name: 'First Flight', desc: 'Complete your first game' },
-  quiz_master: { id: 'quiz_master', emoji: '🧠', name: 'Quiz Master', desc: 'Answer 10 quizzes correctly' },
-  unstoppable: { id: 'unstoppable', emoji: '🔥', name: 'Unstoppable', desc: 'Reach a score of 100' },
-  silver_legend: { id: 'silver_legend', emoji: '🥈', name: 'Silver Legend', desc: 'Witness a Legacy Moment' },
-  jubilee_pilot: { id: 'jubilee_pilot', emoji: '🎓', name: 'Jubilee Pilot', desc: 'Play all 3 game modes' },
-  streak_hero: { id: 'streak_hero', emoji: '⚡', name: 'Streak Hero', desc: 'Get 5 quiz answers in a row' },
+  first_flight: { id: 'first_flight', iconType: 'target', name: 'First Flight', desc: 'Complete your first game' },
+  quiz_master: { id: 'quiz_master', iconType: 'book', name: 'Quiz Master', desc: 'Answer 10 quizzes correctly' },
+  unstoppable: { id: 'unstoppable', iconType: 'flame', name: 'Unstoppable', desc: 'Reach a score of 100' },
+  silver_legend: { id: 'silver_legend', iconType: 'medal', name: 'Silver Legend', desc: 'Witness a Legacy Moment' },
+  jubilee_pilot: { id: 'jubilee_pilot', iconType: 'student', name: 'Jubilee Pilot', desc: 'Play all 3 game modes' },
+  streak_hero: { id: 'streak_hero', iconType: 'star', name: 'Streak Hero', desc: 'Get 5 quiz answers in a row' },
 };
 
 export function getStats() {

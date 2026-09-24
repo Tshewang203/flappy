@@ -155,6 +155,15 @@ body.video-active #game-container canvas {
   color: #ffffff;
   margin-bottom: 16px;
   font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.avatar-modal-icon {
+  color: #ffd700;
+  flex-shrink: 0;
 }
 
 .avatar-video,
