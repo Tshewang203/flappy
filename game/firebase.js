@@ -20,6 +20,16 @@ import {
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { MODES } from './config/constants.js';
 
+/**
+ * Some early leaderboard documents stored the mode's display name (e.g. "Department Challenge")
+ * instead of its stable id (e.g. "department"). Normalize both shapes to the id so old scores
+ * still show up alongside new ones.
+ */
+function normalizeModeId(rawMode) {
+  const byName = Object.values(MODES).find((m) => m.name === rawMode);
+  return byName ? byName.id : rawMode;
+}
+
 const firebaseConfig = {
   apiKey: "AIzaSyDoTuxsIvAo_nlpDPznjud2IjXL1Nvmjec",
   authDomain: "flappybirdcst.firebaseapp.com",
@@ -88,12 +98,9 @@ export async function getLeaderboard({ modeId, department, role, topN = 10 } = {
     return [];
   }
 
-  const modeInfo = Object.values(MODES).find((m) => m.id === modeId);
-  const modeName = modeInfo?.name || modeId;
-
   try {
     // Build query with available filters
-    const constraints = [where('mode', '==', modeName)];
+    const constraints = [where('mode', '==', modeId)];
 
     if (modeId === 'department') {
       if (department) constraints.push(where('department', '==', department));
@@ -121,9 +128,6 @@ export async function getLeaderboard({ modeId, department, role, topN = 10 } = {
 /** Client-side filter fallback when Firestore composite index is missing */
 async function getLeaderboardFallback({ modeId, department, role, topN }) {
   try {
-    const modeInfo = Object.values(MODES).find((m) => m.id === modeId);
-    const modeName = modeInfo?.name || modeId;
-
     const q = query(collection(db, 'leaderboard'), orderBy('score', 'desc'), limit(100));
     const snapshot = await getDocs(q);
 
@@ -133,7 +137,7 @@ async function getLeaderboardFallback({ modeId, department, role, topN }) {
       timestamp: doc.data().timestamp?.toDate?.() || null,
     }));
 
-    entries = entries.filter((e) => e.mode === modeName);
+    entries = entries.filter((e) => normalizeModeId(e.mode) === modeId);
 
     if (modeId === 'department') {
       if (department) entries = entries.filter((e) => e.department === department);

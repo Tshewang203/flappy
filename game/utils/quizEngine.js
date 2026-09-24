@@ -12,6 +12,12 @@ const journeyTriggered = new Set();
 /** Dept mode: track used question IDs per department to avoid immediate repeats */
 const deptUsedQuestions = new Map();
 
+/** Dept mode: tracks which score thresholds (multiples of 10) have already fired this session */
+const deptTriggered = new Set();
+
+/** How often (in points) Department Challenge fires a quiz */
+const DEPT_QUIZ_SCORE_INTERVAL = 10;
+
 /**
  * Load structured JSON question banks (called once from BootScene).
  */
@@ -24,8 +30,8 @@ export function isQuizDataReady() {
   return Boolean(cstHistory?.timeline?.length && departmentQuestions);
 }
 
-/** Journey mode: exact score milestones only — 5, 15, 25 */
-export const JOURNEY_QUIZ_SCORES = [5, 15, 25];
+/** Journey mode: exact score milestones only — 10, 20, 30 */
+export const JOURNEY_QUIZ_SCORES = [10, 20, 30];
 
 /**
  * Point-based trigger for CST Journey mode.
@@ -110,23 +116,18 @@ export function getDifficultyForScore(score) {
 }
 
 /**
- * Random probability trigger for Department mode.
- * Not fixed intervals — chance grows with score and progression.
+ * Fixed-interval trigger for Department mode — fires once per every
+ * DEPT_QUIZ_SCORE_INTERVAL points (10, 20, 30, ...), same cadence as Journey mode.
  */
-export function shouldTriggerDeptQuiz(score, obstaclesPassed, lastQuizObstacle, rng = Math.random) {
-  const minObstacles = 8;
-  const cooldown = 5;
-  const baseChance = 0.07;
-  const maxChance = 0.32;
+export function shouldTriggerDeptQuiz(score) {
+  if (score <= 0 || score % DEPT_QUIZ_SCORE_INTERVAL !== 0) return false;
+  if (deptTriggered.has(score)) return false;
+  return true;
+}
 
-  if (obstaclesPassed < minObstacles) return false;
-  if (obstaclesPassed - lastQuizObstacle < cooldown) return false;
-
-  const progressBonus = obstaclesPassed * 0.004;
-  const scoreBonus = score * 0.002;
-  const chance = Math.min(maxChance, baseChance + progressBonus + scoreBonus);
-
-  return rng() < chance;
+/** Mark a department score threshold as consumed */
+export function markDeptQuizTriggered(score) {
+  deptTriggered.add(score);
 }
 
 /**
@@ -166,9 +167,10 @@ export function getDeptQuestion(department, score) {
   };
 }
 
-/** Reset dept used-question tracking for new game */
+/** Reset dept used-question and score-trigger tracking for new game */
 export function resetDeptQuizState() {
   deptUsedQuestions.clear();
+  deptTriggered.clear();
 }
 
 /** Normalize JSON question to QuizScene format */

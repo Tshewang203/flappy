@@ -10,11 +10,11 @@ import {
   MAX_FALL_SPEED,
   POWER_UPS,
   SURPRISE_REWARD_CHANCE,
-  ROLES,
   PLAYER_DISPLAY_SIZE,
   PLAYER_HIT_RADIUS,
   PLAYER_START_X,
   PIPE_WIDTH,
+  COLORS,
 } from '../config/constants.js';
 import { CAMPUS_LOCATIONS } from '../data/legacy.js';
 import { getPlayer, getAvatar } from '../utils/storage.js';
@@ -26,6 +26,7 @@ import {
   shouldTriggerJourneyQuiz,
   shouldTriggerDeptQuiz,
   markJourneyQuizTriggered,
+  markDeptQuizTriggered,
   getJourneyQuiz,
   getJourneyTimelineCard,
   getDeptQuestion,
@@ -134,16 +135,20 @@ export class GameScene extends Phaser.Scene {
     const modeTag = this.modeInfo?.classic
       ? 'Classic Flappy — Just Fly'
       : this.mode === 'journey'
-        ? 'CST trivia at 5, 15 & 25 pts'
+        ? 'CST trivia at 10, 20 & 30 pts'
         : this.mode === 'story'
           ? 'Reach the score to complete each level'
-          : `${this.player?.department || 'Dept'} — surprise quizzes!`;
-    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 95, modeTag, {
-      fontFamily: 'Inter', fontSize: '12px', color: 'rgba(255,255,255,0.55)',
+          : `${this.player?.department || 'Dept'} quiz every 10 pts`;
+    const modeTagText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 95, modeTag, {
+      fontFamily: 'Inter', fontSize: '12px', color: 'rgba(255,255,255,0.9)',
     }).setOrigin(0.5).setDepth(20);
+    this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT - 95, modeTagText.width + 32, 26, 0x0a1e33, 0.6)
+      .setDepth(19);
 
+    this.readyBadge = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 50, 360, 74, 0x0a1e33, 0.7)
+      .setStrokeStyle(2, COLORS.gold, 0.6).setDepth(19);
     this.readyText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 50, 'Tap or Press SPACE\nto Start', {
-      fontFamily: 'Orbitron', fontSize: '20px', color: '#c0c0c0', align: 'center',
+      fontFamily: 'Orbitron', fontSize: '20px', color: COLORS.gold, align: 'center',
     }).setOrigin(0.5).setDepth(20);
 
     this.tweens.add({
@@ -275,17 +280,11 @@ export class GameScene extends Phaser.Scene {
     if (avatar) {
       this.createFacePlayer(avatar);
     } else {
-      const styleMap = { student: 'bird', lecturer: 'avatar_lecturer', hacker: 'avatar_hacker' };
-      const styleId = this.player?.avatarStyle || (this.player?.role === ROLES.LECTURER ? 'lecturer' : 'student');
-      const texKey = this.textures.exists(styleMap[styleId]) ? styleMap[styleId] : 'bird';
-      this.bird = this.physics.add.sprite(PLAYER_START_X, GAME_HEIGHT / 2, texKey);
-      if (texKey === 'bird') {
-        this.bird.body.setSize(32, 26);
-        this.bird.body.setOffset(6, 5);
-      } else {
-        this.bird.setDisplaySize(PLAYER_DISPLAY_SIZE, PLAYER_DISPLAY_SIZE);
-        this.bird.body.setCircle(PLAYER_HIT_RADIUS);
-      }
+      // Same default bird sprite for every player, regardless of role or department —
+      // only a captured/uploaded photo changes how the bird looks.
+      this.bird = this.physics.add.sprite(PLAYER_START_X, GAME_HEIGHT / 2, 'bird');
+      this.bird.body.setSize(32, 26);
+      this.bird.body.setOffset(6, 5);
     }
 
     this.bird.setCollideWorldBounds(true);
@@ -375,6 +374,7 @@ export class GameScene extends Phaser.Scene {
     this.isStarted = true;
     this.bird.setGravityY(GRAVITY);
     this.readyText.destroy();
+    this.readyBadge.destroy();
     this.events.emit('gameStarted');
     AudioManager.playBGM(this, false);
   }
@@ -503,10 +503,8 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
-    if (
-      this.mode === 'department' &&
-      shouldTriggerDeptQuiz(this.score, this.obstaclesPassed, this.lastQuizObstacle)
-    ) {
+    if (this.mode === 'department' && shouldTriggerDeptQuiz(this.score)) {
+      markDeptQuizTriggered(this.score);
       this.lastQuizObstacle = this.obstaclesPassed;
       this.triggerQuiz();
     }
@@ -528,10 +526,6 @@ export class GameScene extends Phaser.Scene {
     this.isPaused = true;
     this.physics.pause();
 
-    let question = null;
-    let timelineIndex = null;
-    let difficulty = 'easy';
-    let quizCategory = 'department';
     const department = this.player?.department || 'IT';
 
     if (this.mode === 'journey' && triggerScore != null) {
@@ -541,26 +535,38 @@ export class GameScene extends Phaser.Scene {
         this.physics.resume();
         return;
       }
-      question = journeyData.question;
-      timelineIndex = journeyData.quizIndex;
-      quizCategory = 'CST';
-      difficulty = 'history';
-    } else if (this.mode === 'department') {
+      this.launchQuizScene({
+        quizCategory: 'CST',
+        department,
+        question: journeyData.question,
+        difficulty: 'history',
+        timelineIndex: journeyData.quizIndex,
+      });
+      return;
+    }
+
+    if (this.mode === 'department') {
       const deptData = getDeptQuestion(department, this.score);
       if (!deptData) {
         this.isPaused = false;
         this.physics.resume();
         return;
       }
-      question = deptData.question;
-      difficulty = deptData.difficulty;
-      quizCategory = 'department';
-    } else {
-      this.isPaused = false;
-      this.physics.resume();
+      this.launchQuizScene({
+        quizCategory: 'department',
+        department,
+        question: deptData.question,
+        difficulty: deptData.difficulty,
+        timelineIndex: null,
+      });
       return;
     }
 
+    this.isPaused = false;
+    this.physics.resume();
+  }
+
+  launchQuizScene({ quizCategory, department, question, difficulty, timelineIndex }) {
     this.scene.launch('QuizScene', {
       mode: this.mode,
       quizCategory,
@@ -575,6 +581,17 @@ export class GameScene extends Phaser.Scene {
     this.scene.pause();
   }
 
+  /** Tileable pipe column that stays crisp at any height (no stretched/squashed texture). */
+  createPipeColumn(x, y, height, pipeKey) {
+    const column = this.add.tileSprite(x, y, PIPE_WIDTH, height, pipeKey);
+    this.physics.add.existing(column);
+    column.body.setSize(PIPE_WIDTH - 10, height);
+    column.body.setImmovable(true);
+    column.body.setAllowGravity(false);
+    this.pipes.add(column);
+    return column;
+  }
+
   spawnPipePair() {
     const minY = 120;
     const maxY = GAME_HEIGHT - 120 - this.pipeGap;
@@ -584,9 +601,7 @@ export class GameScene extends Phaser.Scene {
     const obstacleType = Phaser.Utils.Array.GetRandom(this.config.obstacles);
 
     const topH = gapCenter - this.pipeGap / 2;
-    const topPipe = this.pipes.create(GAME_WIDTH + 50, topH / 2, pipeKey);
-    topPipe.setDisplaySize(PIPE_WIDTH, topH);
-    topPipe.body.setSize(PIPE_WIDTH - 10, topH);
+    const topPipe = this.createPipeColumn(GAME_WIDTH + 50, topH / 2, topH, pipeKey);
     topPipe.setDepth(2);
     topPipe.setFlipY(true);
     const topCap = this.add.image(GAME_WIDTH + 50, topH, 'pipe_cap')
@@ -595,9 +610,7 @@ export class GameScene extends Phaser.Scene {
 
     const bottomY = gapCenter + this.pipeGap / 2;
     const bottomH = GAME_HEIGHT - bottomY - 60;
-    const bottomPipe = this.pipes.create(GAME_WIDTH + 50, bottomY + bottomH / 2, pipeKey);
-    bottomPipe.setDisplaySize(PIPE_WIDTH, bottomH);
-    bottomPipe.body.setSize(PIPE_WIDTH - 10, bottomH);
+    const bottomPipe = this.createPipeColumn(GAME_WIDTH + 50, bottomY + bottomH / 2, bottomH, pipeKey);
     bottomPipe.setDepth(2);
     bottomPipe.setData('isMarker', true);
     bottomPipe.setData('scored', false);
@@ -605,7 +618,12 @@ export class GameScene extends Phaser.Scene {
       .setDisplaySize(PIPE_WIDTH + 8, 34).setDepth(3);
     bottomPipe.setData('cap', bottomCap);
 
-    const label = UIHelper.drawIcon(this, obstacleType || 'book', GAME_WIDTH + 50, gapCenter - this.pipeGap / 2 - 20, 13, '#ffffff', 3);
+    // Obstacle icon on a solid dark badge so it reads clearly over the busy campus photo.
+    const badgeY = gapCenter - this.pipeGap / 2 - 20;
+    const badge = this.add.circle(GAME_WIDTH + 50, badgeY, 16, 0x1a1a2e, 0.85)
+      .setStrokeStyle(2, 0xffd700, 0.7).setDepth(3);
+    const label = UIHelper.drawIcon(this, obstacleType || 'book', GAME_WIDTH + 50, badgeY, 11, '#ffd700', 4);
+    this.obstacleLabels.add(badge);
     this.obstacleLabels.add(label);
 
     if (Math.random() < this.config.powerUpChance) {
