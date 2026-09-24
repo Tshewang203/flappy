@@ -4,8 +4,7 @@ import { ASSETS } from '../config/constants.js';
 export function loadOptionalImages(scene) {
   const optional = [
     ...ASSETS.campus.map((path, i) => [`campus${i + 1}`, path]),
-    ...ASSETS.story.map((path, i) => [`story${i + 1}`, path]),
-  ];
+    ...ASSETS.story.map((path, i) => [`story${i + 1}`, path]),  ];
 
   optional.forEach(([key, path]) => {
     const img = new Image();

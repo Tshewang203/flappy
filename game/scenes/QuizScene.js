@@ -21,6 +21,10 @@ export class QuizScene extends Phaser.Scene {
     this.question = data.question || null;
     this.difficulty = data.difficulty || 'easy';
     this.timelineIndex = data.timelineIndex ?? null;
+    /** Department question-bank year, e.g. 'year2' */
+    this.yearKey = data.yearKey || null;
+    /** Silver Jubilee quiz: { stage, totalStages, gating } — gating = stage-end checkpoint */
+    this.checkpoint = data.checkpoint || null;
   }
 
   create() {
@@ -42,12 +46,22 @@ export class QuizScene extends Phaser.Scene {
       .setStrokeStyle(2, 0x0094db, 0.6).setDepth(1);
 
     const isJourney = this.mode === 'journey';
-    const quizTitle = isJourney ? 'CST History Check' : `${this.department} Challenge`;
+    const gating = this.checkpoint?.gating !== false;
+    const quizTitle = this.checkpoint
+      ? (gating ? `Stage ${this.checkpoint.stage} Checkpoint` : `Stage ${this.checkpoint.stage} Quiz`)
+      : isJourney ? 'CST History Check' : `${this.department} Challenge`;
     const quizIcon = isJourney ? 'pin' : 'target';
-    const typeLabel = this.question.type === 'year_match' ? 'Year → Event' : 'Multiple Choice';
-    const quizSubtitle = isJourney
-      ? `Score ${this.score} — ${typeLabel}`
-      : `${this.difficulty.charAt(0).toUpperCase() + this.difficulty.slice(1)} · ${typeLabel}`;
+    const typeLabels = { year_match: 'Year → Event', true_false: 'True / False' };
+    const typeLabel = typeLabels[this.question.type] || 'Multiple Choice';
+    const difficultyLabel = this.difficulty.charAt(0).toUpperCase() + this.difficulty.slice(1);
+    const yearLabel = this.yearKey ? `Year ${this.yearKey.replace('year', '')} · ` : '';
+    const quizSubtitle = this.checkpoint
+      ? (gating
+        ? `CST History · ${typeLabel} — answer correctly to unlock the next scene`
+        : `CST History · ${typeLabel} — bonus quiz`)
+      : isJourney
+        ? `Score ${this.score} — ${typeLabel}`
+        : `${yearLabel}${difficultyLabel} · ${typeLabel}`;
 
     const titleText = this.add.text(GAME_WIDTH / 2 + 12, cardY - cardH / 2 + 28, quizTitle, {
       fontFamily: 'Orbitron', fontSize: '20px', color: COLORS.gold, fontStyle: 'bold',
@@ -95,10 +109,11 @@ export class QuizScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(2);
 
     const optionLabels = ['A', 'B', 'C', 'D'];
-    const startY = cardY + 15;
+    // Four 46px options at 52px spacing end clear of the legend row at the bottom of the card
+    const startY = cardY - 5;
 
     this.question.options.forEach((opt, idx) => {
-      const optY = startY + idx * 60;
+      const optY = startY + idx * 52;
       const btnW = cardW - 50;
       const btnBg = this.add.rectangle(GAME_WIDTH / 2, optY, btnW, 46, 0x004f8a, 0.85)
         .setStrokeStyle(1, 0x0094db, 0.4)
@@ -169,7 +184,11 @@ export class QuizScene extends Phaser.Scene {
 
     const resultMsg = correct
       ? (streakBonus ? `Nice! +${QUIZ_BONUS} & streak bonus!` : `Correct! +${QUIZ_BONUS} pts`)
-      : `Missed it — −${QUIZ_PENALTY} pts`;
+      : this.checkpoint
+        ? (this.checkpoint.gating === false
+          ? `Missed it — −${Math.abs(QUIZ_PENALTY)} pts`
+          : `Missed — −${Math.abs(QUIZ_PENALTY)} pts, earn them back to retry`)
+        : `Missed it — −${QUIZ_PENALTY} pts`;
 
     const resultY = GAME_HEIGHT / 2 + 210;
     const resultText = this.add.text(GAME_WIDTH / 2 + 14, resultY, resultMsg, {

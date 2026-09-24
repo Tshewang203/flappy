@@ -34,7 +34,7 @@ export class GameOverScene extends Phaser.Scene {
     const stats = getScoreStats(this.mode);
     const modeInfo = Object.values(MODES).find((m) => m.id === this.mode);
 
-    this.add.text(GAME_WIDTH / 2, 60, this.storyComplete ? 'STORY MODE COMPLETE!' : 'GAME OVER', {
+    this.add.text(GAME_WIDTH / 2, 60, this.storyComplete ? 'SILVER JUBILEE COMPLETE!' : 'GAME OVER', {
       fontFamily: 'Orbitron',
       fontSize: '26px',
       color: COLORS.gold,

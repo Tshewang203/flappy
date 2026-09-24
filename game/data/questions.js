@@ -4,8 +4,7 @@
  */
 export {
   getDifficultyForProgress,
-  getRandomQuestion,
-  getDifficultyForScore,
   getDeptQuestion,
-  getJourneyQuiz,
+  getJubileeQuiz,
+  getYearKey,
 } from '../utils/quizEngine.js';

@@ -62,21 +62,37 @@ export class LegacyScene extends Phaser.Scene {
       wordWrap: { width: GAME_WIDTH - 70 }, align: 'center',
     }).setOrigin(0.5).setDepth(2);
 
-    const continueText = this.add.text(GAME_WIDTH / 2 - 8, cardY + 165, 'Tap to continue', {
+    const continueText = this.add.text(GAME_WIDTH / 2 - 8, cardY + 165, 'Tap, click or press any key to continue', {
       fontFamily: 'Orbitron', fontSize: '14px', color: COLORS.silver,
-    }).setOrigin(0.5).setDepth(2);
-    UIHelper.drawIcon(this, 'forward', GAME_WIDTH / 2 + continueText.width / 2 + 14, cardY + 165, 6, COLORS.silver, 2);
+    }).setOrigin(0.5).setDepth(2).setAlpha(0.35);
+    const continueIcon = UIHelper.drawIcon(this, 'forward', GAME_WIDTH / 2 + continueText.width / 2 + 14, cardY + 165, 6, COLORS.silver, 2)
+      .setAlpha(0.35);
 
-    this.tweens.add({
-      targets: continueText, alpha: { from: 0.5, to: 1 }, duration: 700, yoyo: true, repeat: -1,
+    // Quick tap-to-continue: any key / click / touch. Armed after a moment so the tap that
+    // answered the quiz can't skip the card before it's seen.
+    this.closing = false;
+    const dismiss = () => {
+      if (this.closing) return;
+      this.closing = true;
+      this.input.off('pointerdown', dismiss);
+      this.input.keyboard?.off('keydown', dismiss);
+      this.tweens.killAll();
+      this.tweens.add({
+        targets: this.children.list.slice(),
+        alpha: 0,
+        duration: 140,
+        onComplete: () => this.close(),
+      });
+    };
+    this.time.delayedCall(400, () => {
+      this.input.on('pointerdown', dismiss);
+      this.input.keyboard?.on('keydown', dismiss);
+      this.tweens.add({
+        targets: [continueText, continueIcon], alpha: { from: 0.55, to: 1 }, duration: 600, yoyo: true, repeat: -1,
+      });
     });
 
-    this.time.delayedCall(2500, () => {
-      this.input.once('pointerdown', () => this.close());
-      this.input.keyboard?.once('keydown-SPACE', () => this.close());
-    });
-
-    this.cameras.main.fadeIn(400);
+    this.cameras.main.fadeIn(250);
   }
 
   close() {

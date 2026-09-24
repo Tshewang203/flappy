@@ -238,12 +238,43 @@ export class PlayerInfoScene extends Phaser.Scene {
     }
   }
 
+  lockGameInput() {
+    document.body.classList.add('avatar-capture-open');
+    this.scene.pause();
+    this.input.enabled = false;
+    if (this.game?.input) {
+      this.game.input.enabled = false;
+      if (this.game.input.mouse) this.game.input.mouse.enabled = false;
+      if (this.game.input.touch) this.game.input.touch.enabled = false;
+    }
+    if (this.game.canvas) this.game.canvas.style.pointerEvents = 'none';
+    if (this.nameInput) this.nameInput.style.visibility = 'hidden';
+  }
+
+  unlockGameInput() {
+    document.body.classList.remove('avatar-capture-open');
+    if (this.scene.isPaused()) this.scene.resume();
+    this.input.enabled = true;
+    if (this.game?.input) {
+      this.game.input.enabled = true;
+      if (this.game.input.mouse) this.game.input.mouse.enabled = true;
+      if (this.game.input.touch) this.game.input.touch.enabled = true;
+    }
+    if (this.game.canvas) this.game.canvas.style.pointerEvents = 'auto';
+    if (this.nameInput) this.nameInput.style.visibility = 'visible';
+  }
+
   async handleTakePhoto(y) {
-    const result = await openCameraCapture();
-    if (result) {
-      this.avatarData = result;
-      await this.loadAvatarPreview(result, y);
-      this.cameras.main.flash(200, 192, 192, 192, false);
+    this.lockGameInput();
+    try {
+      const result = await openCameraCapture();
+      if (result) {
+        this.avatarData = result;
+        await this.loadAvatarPreview(result, y);
+        this.cameras.main.flash(200, 192, 192, 192, false);
+      }
+    } finally {
+      this.unlockGameInput();
     }
   }
 
@@ -308,8 +339,8 @@ export class PlayerInfoScene extends Phaser.Scene {
         this.submitPlayer();
       }
     });
-    this.events.on('shutdown', () => input.remove());
-    this.events.on('destroy', () => input.remove());
+    this.events.once('shutdown', () => input.remove());
+    this.events.once('destroy', () => input.remove());
     return input;
   }
 

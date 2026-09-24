@@ -13,7 +13,12 @@
       "question": {
         "type": "multiple_choice",
         "q": "In which year was the College of Science and Technology (CST) founded?",
-        "options": ["1998", "2001", "2005", "2010"],
+        "options": [
+          "1998",
+          "2001",
+          "2005",
+          "2010"
+        ],
         "answer": 1
       }
     },
@@ -28,7 +33,12 @@
       "question": {
         "type": "year_match",
         "q": "Match the year: CST undergoes major academic expansion with new programs and upgraded labs.",
-        "options": ["2008", "2011", "2014", "2018"],
+        "options": [
+          "2008",
+          "2011",
+          "2014",
+          "2018"
+        ],
         "answer": 2
       }
     },
@@ -43,7 +53,12 @@
       "question": {
         "type": "multiple_choice",
         "q": "CST's Silver Jubilee celebrates how many years of institutional excellence?",
-        "options": ["20 years", "25 years", "30 years", "50 years"],
+        "options": [
+          "20 years",
+          "25 years",
+          "30 years",
+          "50 years"
+        ],
         "answer": 1
       }
     }
@@ -81,6 +96,183 @@
         "Fine Arts only"
       ],
       "answer": 0
+    },
+    {
+      "type": "multiple_choice",
+      "q": "Where is the CST campus located?",
+      "options": [
+        "Thimphu",
+        "Paro",
+        "Rinchending, Phuentsholing",
+        "Punakha"
+      ],
+      "answer": 2
+    },
+    {
+      "type": "multiple_choice",
+      "q": "Phuentsholing, home of CST, is in which Dzongkhag?",
+      "options": [
+        "Chhukha",
+        "Paro",
+        "Thimphu",
+        "Bumthang"
+      ],
+      "answer": 0
+    },
+    {
+      "type": "multiple_choice",
+      "q": "Phuentsholing lies on Bhutan's border with which country?",
+      "options": [
+        "China",
+        "India",
+        "Nepal",
+        "Bangladesh"
+      ],
+      "answer": 1
+    },
+    {
+      "type": "multiple_choice",
+      "q": "In which year was the Royal University of Bhutan established?",
+      "options": [
+        "1995",
+        "2010",
+        "1985",
+        "2003"
+      ],
+      "answer": 3
+    },
+    {
+      "type": "multiple_choice",
+      "q": "What does RUB stand for?",
+      "options": [
+        "Regional University Board",
+        "Royal University of Bhutan",
+        "Royal Unity of Bhutan",
+        "Research University of Bhutan"
+      ],
+      "answer": 1
+    },
+    {
+      "type": "multiple_choice",
+      "q": "How many years does a Silver Jubilee celebrate?",
+      "options": [
+        "25",
+        "10",
+        "50",
+        "60"
+      ],
+      "answer": 0
+    },
+    {
+      "type": "multiple_choice",
+      "q": "Which anniversary is called the Golden Jubilee?",
+      "options": [
+        "25th",
+        "40th",
+        "50th",
+        "75th"
+      ],
+      "answer": 2
+    },
+    {
+      "type": "multiple_choice",
+      "q": "CST was founded in 2001. In which year does it celebrate its Silver Jubilee?",
+      "options": [
+        "2021",
+        "2025",
+        "2031",
+        "2026"
+      ],
+      "answer": 3
+    },
+    {
+      "type": "multiple_choice",
+      "q": "Which of these engineering programmes is offered at CST?",
+      "options": [
+        "Medicine",
+        "Engineering Geology",
+        "Law",
+        "Veterinary Science"
+      ],
+      "answer": 1
+    },
+    {
+      "type": "true_false",
+      "q": "CST offers a Bachelor of Architecture programme.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": 0
+    },
+    {
+      "type": "true_false",
+      "q": "CST is one of the colleges of the Royal University of Bhutan.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": 0
+    },
+    {
+      "type": "multiple_choice",
+      "q": "What does BE stand for in CST's engineering degrees?",
+      "options": [
+        "Basic Engineering",
+        "Bachelor of Electronics",
+        "Bachelor of Engineering",
+        "Board Examination"
+      ],
+      "answer": 2
+    },
+    {
+      "type": "true_false",
+      "q": "Water Resources Engineering is one of CST's engineering programmes.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": 0
+    },
+    {
+      "type": "multiple_choice",
+      "q": "Which colour is traditionally linked with a 25th (Silver) Jubilee?",
+      "options": [
+        "Gold",
+        "Silver",
+        "Ruby",
+        "Diamond"
+      ],
+      "answer": 1
+    },
+    {
+      "type": "true_false",
+      "q": "The CST campus is in Bhutan's capital city, Thimphu.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": 1
+    },
+    {
+      "type": "multiple_choice",
+      "q": "Which CST programme focuses on computing and software?",
+      "options": [
+        "Civil Engineering",
+        "Architecture",
+        "Water Resources Engineering",
+        "Information Technology"
+      ],
+      "answer": 3
+    },
+    {
+      "type": "true_false",
+      "q": "CST's Silver Jubilee in 2026 marks 50 years since the college was founded.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": 1
     }
   ]
 }

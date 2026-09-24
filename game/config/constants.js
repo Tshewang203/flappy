@@ -10,7 +10,29 @@ export const GAME_SCALE_ZOOM = 0.92;
 export const PLAYER_DISPLAY_SIZE = 76;
 export const PLAYER_HIT_RADIUS = 34;
 export const PLAYER_START_X = 270;
-export const PIPE_WIDTH = 88;
+/** Horizontal gap between pipe pairs — keeps roughly 2–3 walls on screen */
+export const PIPE_SPACING = 450;
+/** Random +/- jitter applied to spacing so walls don't feel metronomic */
+export const PIPE_SPACING_JITTER = 35;
+/** Walls vary in thickness between these widths */
+export const PIPE_MIN_WIDTH = 78;
+export const PIPE_MAX_WIDTH = 104;
+/** Score needed per wall level (non-story modes); each level changes the wall colour */
+export const WALL_LEVEL_SCORE = 10;
+/** Wall levels from which some walls start drifting gently up/down */
+export const WALL_MOTION_LEVEL = 3;
+
+/** Flappy-style wall colour palettes — one per level, cycling */
+export const WALL_PALETTES = [
+  { name: 'green', light: '#e4fba0', mid: '#8ed334', dark: '#4a8a17', outline: '#2f4a12' },
+  { name: 'blue', light: '#c9f1ff', mid: '#3fb3ec', dark: '#1a6aa8', outline: '#0f3553' },
+  { name: 'orange', light: '#ffe2a8', mid: '#f5a031', dark: '#b4600f', outline: '#5a2f08' },
+  { name: 'purple', light: '#eed6ff', mid: '#ae6ce0', dark: '#6a2f9a', outline: '#351650' },
+  { name: 'red', light: '#ffc9c2', mid: '#e9544a', dark: '#9e231c', outline: '#4f110d' },
+  { name: 'teal', light: '#c4fff2', mid: '#2fd1b0', dark: '#117a67', outline: '#093d34' },
+  { name: 'gold', light: '#fff4b8', mid: '#f2c830', dark: '#a57f0c', outline: '#524006' },
+  { name: 'pink', light: '#ffd6ec', mid: '#f0689f', dark: '#a42a5c', outline: '#52142e' },
+];
 
 export const GAME_TITLE = 'CST Silver Flight';
 export const GAME_TAGLINE = 'Learn • Play • Compete';
@@ -51,28 +73,32 @@ export const BATCH_YEARS = (() => {
 })();
 
 export const MODES = {
+  // Classic: one scenery, no quizzes, no progression. Id kept so saved scores still count.
   FLAPPY_CST: {
     id: 'flappy_cst',
-    name: 'Flappy CST',
-    shortName: 'Flappy',
-    subtitle: 'Classic Flappy Bird',
+    name: 'Classic Mode',
+    shortName: 'Classic',
+    subtitle: 'Traditional Flappy Bird',
     color: 0x2ecc71,
     iconType: 'play',
-    description: 'Tap, flap, survive.',
+    description: 'One scenery. Tap to fly, dodge the pipes, beat your best score.',
     hasQuiz: false,
     classic: true,
     leaderboardType: 'global',
   },
+  // Silver Jubilee Challenge: Story Mode's stages + the 25 Years Journey CST quizzes as
+  // checkpoints between stages. Keeps the old 'journey' id so its scores/leaderboard carry over.
   JOURNEY: {
     id: 'journey',
-    name: '25 Years Journey',
-    shortName: 'Journey',
-    subtitle: 'CST History Trail',
-    color: 0x9b59b6,
-    iconType: 'pin',
-    description: 'CST history at score milestones',
+    name: 'Silver Jubilee Challenge',
+    shortName: 'Jubilee',
+    subtitle: 'Changing Scenes · Progression · Quizzes',
+    color: 0xc0c0c0,
+    iconType: 'star',
+    description: '6 stages — pass a CST history quiz checkpoint to unlock each next scene.',
     hasQuiz: true,
     quizCategory: 'CST',
+    stages: true,
     leaderboardType: 'global',
   },
   DEPARTMENT: {
@@ -87,46 +113,39 @@ export const MODES = {
     quizCategory: 'department',
     leaderboardType: 'department',
   },
-  STORY: {
-    id: 'story',
-    name: 'Story Mode',
-    shortName: 'Story',
-    subtitle: '6 Levels, One Story',
-    color: 0xe67e22,
-    iconType: 'book',
-    description: 'Reach the score to complete each level.',
-    hasQuiz: false,
-    classic: false,
-    leaderboardType: 'global',
-  },
 };
 
-/** Story Mode — 6 levels with score targets and background keys */
+/**
+ * Silver Jubilee Challenge stages (formerly Story Mode levels): score target, scenery and
+ * difficulty per stage. Reaching requiredScore opens that stage's CST quiz checkpoint, which must
+ * be passed to move on; quizAt lists extra mid-stage quizzes (6 checkpoints + 4 mid-stage = 10).
+ */
 export const STORY_LEVELS = [
-  { level: 1, requiredScore: 5, bgKey: 'story1', initialSpeed: 155, maxSpeed: 220, initialGap: 220, minGap: 170, spawnInterval: 2600 },
-  { level: 2, requiredScore: 5, bgKey: 'story2', initialSpeed: 175, maxSpeed: 255, initialGap: 205, minGap: 155, spawnInterval: 2350 },
-  { level: 3, requiredScore: 8, bgKey: 'story3', initialSpeed: 195, maxSpeed: 290, initialGap: 190, minGap: 140, spawnInterval: 2100 },
-  { level: 4, requiredScore: 8, bgKey: 'story4', initialSpeed: 215, maxSpeed: 330, initialGap: 175, minGap: 128, spawnInterval: 1900 },
-  { level: 5, requiredScore: 15, bgKey: 'story5', initialSpeed: 240, maxSpeed: 370, initialGap: 160, minGap: 118, spawnInterval: 1700 },
-  { level: 6, requiredScore: 40, bgKey: 'story6', initialSpeed: 270, maxSpeed: 420, initialGap: 145, minGap: 108, spawnInterval: 1500 },
+  { level: 1, requiredScore: 5, bgKey: 'story1', initialSpeed: 155, maxSpeed: 220, initialGap: 220, minGap: 170, spawnInterval: 1600, pipeSpacing: 500 },
+  { level: 2, requiredScore: 5, bgKey: 'story2', initialSpeed: 175, maxSpeed: 255, initialGap: 205, minGap: 155, spawnInterval: 1500, pipeSpacing: 480 },
+  { level: 3, requiredScore: 8, quizAt: [4], bgKey: 'story3', initialSpeed: 195, maxSpeed: 290, initialGap: 190, minGap: 140, spawnInterval: 1400, pipeSpacing: 465 },
+  { level: 4, requiredScore: 8, quizAt: [4], bgKey: 'story4', initialSpeed: 215, maxSpeed: 330, initialGap: 175, minGap: 128, spawnInterval: 1300, pipeSpacing: 450 },
+  { level: 5, requiredScore: 15, quizAt: [8], bgKey: 'story5', initialSpeed: 240, maxSpeed: 370, initialGap: 160, minGap: 118, spawnInterval: 1200, pipeSpacing: 435 },
+  { level: 6, requiredScore: 40, quizAt: [20], bgKey: 'story6', initialSpeed: 270, maxSpeed: 420, initialGap: 145, minGap: 108, spawnInterval: 1100, pipeSpacing: 420 },
 ];
 
-// Quiz settings — Journey: fixed score milestones (10/20/30, see quizEngine.js);
-// Department: a quiz every DEPT_QUIZ_SCORE_INTERVAL points.
+// Quiz settings — Jubilee: stage checkpoints + mid-stage quizzes; Department: progress-based
+// checkpoints (see DEPT_QUIZ_* below and quizEngine.js)
 export const QUIZ_BONUS = 3;
 export const QUIZ_PENALTY = -3;
 export const QUIZ_TIMER_SECONDS = 10;
 export const QUIZ_STREAK_BONUS = 5;
 export const QUIZ_STREAK_THRESHOLD = 3;
 
-// Department mode quiz tuning — triggers every N points once past the minimum score.
-export const DEPT_QUIZ_SCORE_INTERVAL = 10;
-export const DEPT_QUIZ_MIN_SCORE = 10;
+// Department Challenge quiz schedule, counted in walls flown (so quiz bonuses/penalties
+// don't shift it): the first checkpoints, then a random gap between each later quiz.
+export const DEPT_QUIZ_FIRST_CHECKPOINTS = [3, 6, 9];
+export const DEPT_QUIZ_RANDOM_GAP = { min: 3, max: 5 };
 
 // Surprise reward chance (0–1)
 export const SURPRISE_REWARD_CHANCE = 0.04;
 
-// Journey mode background milestones (score thresholds)
+// Campus background milestones by score (used by Department Challenge)
 export const JOURNEY_MILESTONES = [
   { score: 0, era: 'Foundation Years', bgKey: 'bg_foundation', campusKey: 'campus1' },
   { score: 10, era: 'Growth Phase', bgKey: 'bg_growth', campusKey: 'campus2' },
@@ -142,16 +161,19 @@ export const MODE_CONFIG = {
     maxSpeed: 320,
     initialGap: 200,
     minGap: 130,
-    spawnInterval: 2200,
+    spawnInterval: 1400,
+    pipeSpacing: 450,
     powerUpChance: 0,
     obstacles: ['book', 'exam', 'assignment'],
   },
+  // Base for the Silver Jubilee Challenge; speed/gap/spacing are overridden per stage (STORY_LEVELS)
   journey: {
     initialSpeed: 170,
     maxSpeed: 300,
     initialGap: 210,
     minGap: 140,
-    spawnInterval: 2400,
+    spawnInterval: 1500,
+    pipeSpacing: 470,
     powerUpChance: 0.18,
     obstacles: ['book', 'exam', 'assignment'],
   },
@@ -160,27 +182,47 @@ export const MODE_CONFIG = {
     maxSpeed: 330,
     initialGap: 195,
     minGap: 125,
-    spawnInterval: 2100,
+    spawnInterval: 1350,
+    pipeSpacing: 440,
     powerUpChance: 0.2,
-    obstacles: ['book', 'exam', 'assignment'],
-  },
-  story: {
-    initialSpeed: 155,
-    maxSpeed: 220,
-    initialGap: 220,
-    minGap: 170,
-    spawnInterval: 2600,
-    powerUpChance: 0,
     obstacles: ['book', 'exam', 'assignment'],
   },
 };
 
-// Power-up definitions
+/**
+ * How each power-up looks — one shared set of collectible visuals for every mode.
+ * Textures are drawn in BootScene.createCollectibleTextures; `color` tints the glow,
+ * pickup burst and HUD label accent.
+ */
+export const POWER_UP_VISUALS = {
+  rabbit: { rim: ['#ffe2a3', '#d2650c'], disc: ['#ffc061', '#ec7a0e'], color: 0xff9f1a },
+  snail: { rim: ['#b8f7ec', '#12806f'], disc: ['#6be6d0', '#159683'], color: 0x3fd6bf },
+  star: { rim: ['#e0d0ff', '#4b24a8'], disc: ['#a883ff', '#5227b8'], color: 0xffd23f },
+  shield: { rim: ['#cfeaff', '#1a55a8'], disc: ['#6bb8ff', '#1e5cb4'], color: 0x58b4ff },
+  wifi: { rim: ['#c8f8d4', '#15793d'], disc: ['#66e08d', '#18904a'], color: 0x4fe07f },
+};
+/** On-screen size of a power-up collectible (px) */
+export const POWER_UP_DISPLAY_SIZE = 60;
+
+/**
+ * Silver Jubilee Challenge power-ups. snail/star/shield reuse the existing slow-motion /
+ * 2× score / shield effects; rabbit is a brief speed boost (replaces WiFi Boost in this mode).
+ */
+export const JUBILEE_POWER_UPS = {
+  rabbit: { visual: 'rabbit', label: 'Speed Boost', duration: 3000 },
+  snail: { visual: 'snail', label: 'Slow Motion', duration: 3000 },
+  star: { visual: 'star', label: '2× Points', duration: 5000 },
+  shield: { visual: 'shield', label: 'Shield', duration: 0 },
+};
+/** Game-speed multiplier while the rabbit boost is active */
+export const SPEED_BOOST_MULTIPLIER = 1.5;
+
+// Power-up definitions (Department Challenge — effects unchanged; `visual` picks its look)
 export const POWER_UPS = {
-  coffee: { iconType: 'coffee', duration: 3000, label: 'Slow Motion' },
-  shield: { iconType: 'shield', duration: 0, label: 'Shield' },
-  double: { iconType: 'star', duration: 5000, label: '2x Score' },
-  wifi: { iconType: 'signal', duration: 0, label: 'WiFi Boost' },
+  coffee: { iconType: 'coffee', visual: 'snail', duration: 3000, label: 'Slow Motion' },
+  shield: { iconType: 'shield', visual: 'shield', duration: 0, label: 'Shield' },
+  double: { iconType: 'star', visual: 'star', duration: 5000, label: '2x Score' },
+  wifi: { iconType: 'signal', visual: 'wifi', duration: 0, label: 'WiFi Boost' },
 };
 
 // Physics

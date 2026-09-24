@@ -1,22 +1,25 @@
 /**
- * Quiz engine — separate pools and triggers for Journey (CST) vs Department modes.
- * Data loaded from JSON at boot via initQuizData().
+ * Quiz engine — question pools and selection for the Silver Jubilee Challenge (CST history)
+ * and the Department Challenge (academic questions). Classic Mode never uses it.
+ *
+ * Data (loaded once at boot via initQuizData):
+ *   data/cst_history.json         { timeline: [{ year, title, ..., question }], facts: [question] }
+ *   data/department_questions.json { <Department>: { year1..year4: { easy, medium, hard: [question] } } }
+ *
+ * Selection uses shuffled "bags": each pool is shuffled once per game and dealt from the top, so
+ * questions are random across playthroughs but never repeat within one until the pool runs out
+ * (then it is reshuffled, keeping the last question away from the front).
  */
+
+import { DEPT_QUIZ_FIRST_CHECKPOINTS, DEPT_QUIZ_RANDOM_GAP } from '../config/constants.js';
 
 let cstHistory = null;
 let departmentQuestions = null;
 
-/** @type {Set<number>} Tracks which journey trigger scores have fired this session */
-const journeyTriggered = new Set();
-
-/** Dept mode: track used question IDs per department to avoid immediate repeats */
-const deptUsedQuestions = new Map();
-
-/** Dept mode: tracks which score thresholds (multiples of 10) have already fired this session */
-const deptTriggered = new Set();
-
-/** How often (in points) Department Challenge fires a quiz */
-const DEPT_QUIZ_SCORE_INTERVAL = 10;
+/** Per-game bags of not-yet-asked questions, keyed by pool (e.g. "IT|year2|medium", "jubilee") */
+const bags = new Map();
+/** Last question dealt from each pool, so a reshuffled bag never starts with it */
+const lastDealt = new Map();
 
 /**
  * Load structured JSON question banks (called once from BootScene).
@@ -30,54 +33,56 @@ export function isQuizDataReady() {
   return Boolean(cstHistory?.timeline?.length && departmentQuestions);
 }
 
-/** Journey mode: exact score milestones only — 10, 20, 30 */
-export const JOURNEY_QUIZ_SCORES = [10, 20, 30];
+/** Forget every bag — call at the start of each game so a new playthrough gets a fresh order. */
+export function resetQuizState() {
+  bags.clear();
+  lastDealt.clear();
+}
+
+function shuffle(items) {
+  const a = items.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/** Deal the next item from a pool's bag, refilling (without an immediate repeat) when empty. */
+function deal(key, pool) {
+  if (!pool?.length) return null;
+  let bag = bags.get(key);
+  if (!bag?.length) {
+    bag = shuffle(pool);
+    const last = lastDealt.get(key);
+    if (bag.length > 1 && bag[bag.length - 1] === last) {
+      [bag[0], bag[bag.length - 1]] = [bag[bag.length - 1], bag[0]];
+    }
+    bags.set(key, bag);
+  }
+  const item = bag.pop();
+  lastDealt.set(key, item);
+  return item;
+}
+
+// ─── Silver Jubilee Challenge ──────────────────────────────────────────────────────────
 
 /**
- * Point-based trigger for CST Journey mode.
- * Fires once per milestone score.
+ * A random CST history question for a Jubilee checkpoint or mid-stage quiz.
+ * Draws from timeline questions (which also unlock their history card) and general CST facts,
+ * without repeating within a playthrough.
+ * @returns {{ question: object, timelineIndex: number|null } | null}
  */
-export function shouldTriggerJourneyQuiz(score) {
-  if (!JOURNEY_QUIZ_SCORES.includes(score)) return false;
-  if (journeyTriggered.has(score)) return false;
-  return true;
-}
-
-/** Mark a journey milestone as consumed */
-export function markJourneyQuizTriggered(score) {
-  journeyTriggered.add(score);
-}
-
-/** Reset journey triggers (new game session) */
-export function resetJourneyQuizState() {
-  journeyTriggered.clear();
-}
-
-/** Get sequential quiz index (0, 1, 2) for a given trigger score */
-export function getJourneyQuizIndex(triggerScore) {
-  return JOURNEY_QUIZ_SCORES.indexOf(triggerScore);
-}
-
-/**
- * Get the ordered timeline entry + question for a journey quiz.
- * Never random — follows JSON timeline sequence.
- */
-export function getJourneyQuiz(triggerScore) {
-  if (!cstHistory?.timeline) return null;
-  const entry = cstHistory.timeline.find((t) => t.triggerScore === triggerScore);
-  if (!entry) return null;
-  return {
-    timeline: {
-      order: entry.order,
-      year: entry.year,
-      title: entry.title,
-      description: entry.description,
-      emoji: entry.emoji,
-      location: entry.location,
-    },
-    question: normalizeQuestion(entry.question),
-    quizIndex: getJourneyQuizIndex(triggerScore),
-  };
+export function getJubileeQuiz() {
+  const timeline = cstHistory?.timeline || [];
+  const facts = cstHistory?.facts || [];
+  const pool = [
+    ...timeline.map((entry, i) => ({ raw: entry.question, timelineIndex: i })),
+    ...facts.map((raw) => ({ raw, timelineIndex: null })),
+  ].filter((p) => p.raw);
+  const picked = deal('jubilee', pool);
+  if (!picked) return null;
+  return { question: normalizeQuestion(picked.raw), timelineIndex: picked.timelineIndex };
 }
 
 /**
@@ -106,96 +111,93 @@ export function formatTimelineSequence(upToIndex) {
     .join(' → ');
 }
 
+// ─── Department Challenge ──────────────────────────────────────────────────────────────
+
 /**
- * Difficulty scaling for Department mode based on player score.
+ * Walls flown at which the next Department quiz fires. The first quizzes come at the fixed
+ * checkpoints (3, 6, 9); after that each gap is random (3–5 walls). Counting walls rather
+ * than score keeps quiz bonuses and penalties from shifting the schedule.
+ * @param {number} wallsFlown - walls passed so far (0 at the start of a game)
+ * @param {number} quizzesAsked - Department quizzes already triggered this game
  */
-export function getDifficultyForScore(score) {
-  if (score < 15) return 'easy';
-  if (score < 35) return 'medium';
+export function getNextDeptQuizCheckpoint(wallsFlown, quizzesAsked) {
+  if (quizzesAsked < DEPT_QUIZ_FIRST_CHECKPOINTS.length) {
+    return Math.max(DEPT_QUIZ_FIRST_CHECKPOINTS[quizzesAsked], wallsFlown + 1);
+  }
+  const gap = DEPT_QUIZ_RANDOM_GAP.min
+    + Math.floor(Math.random() * (DEPT_QUIZ_RANDOM_GAP.max - DEPT_QUIZ_RANDOM_GAP.min + 1));
+  return wallsFlown + gap;
+}
+
+/**
+ * Difficulty ramps with progress (walls flown):
+ *   below 6: easy · 6–8: easy or medium · 9–17: medium · 18–26: medium or hard · 27+: hard
+ */
+export function getDifficultyForProgress(wallsFlown) {
+  if (wallsFlown < 6) return 'easy';
+  if (wallsFlown < 9) return Math.random() < 0.5 ? 'easy' : 'medium';
+  if (wallsFlown < 18) return 'medium';
+  if (wallsFlown < 27) return Math.random() < 0.5 ? 'medium' : 'hard';
   return 'hard';
 }
 
 /**
- * Fixed-interval trigger for Department mode — fires once per every
- * DEPT_QUIZ_SCORE_INTERVAL points (10, 20, 30, ...), same cadence as Journey mode.
+ * Map a player's stored year to a question-bank year key. The bank covers years 1–4;
+ * 5th-year students (e.g. Architecture), alumni and lecturers get Year 4 questions.
+ * @param {object|null} player - stored player ({ role, year })
  */
-export function shouldTriggerDeptQuiz(score) {
-  if (score <= 0 || score % DEPT_QUIZ_SCORE_INTERVAL !== 0) return false;
-  if (deptTriggered.has(score)) return false;
-  return true;
+export function getYearKey(player) {
+  const match = /^(\d)/.exec(player?.year || '');
+  const n = match ? Number(match[1]) : 4;
+  return `year${Math.min(Math.max(n, 1), 4)}`;
 }
 
-/** Mark a department score threshold as consumed */
-export function markDeptQuizTriggered(score) {
-  deptTriggered.add(score);
-}
+const YEAR_KEYS = ['year1', 'year2', 'year3', 'year4'];
+const DIFFICULTIES = ['easy', 'medium', 'hard'];
 
 /**
- * Pick a department question — never from CST pool.
- * Difficulty scales with score; avoids immediate repeats.
+ * Pick a Department question for the player's department and year at the given difficulty,
+ * falling back to another difficulty (same year) and then to other years if a pool is
+ * missing. Never draws from the CST history pool.
+ * @returns {{ question: object, difficulty: string, department: string, yearKey: string } | null}
  */
-export function getDeptQuestion(department, score) {
-  if (!departmentQuestions) return null;
-
-  const dept = departmentQuestions[department];
+export function getDeptQuestion(department, yearKey, difficulty) {
+  const dept = departmentQuestions?.[department];
   if (!dept) return null;
 
-  const difficulty = getDifficultyForScore(score);
-  let pool = dept[difficulty] || [];
-  if (pool.length === 0) {
-    pool = [...(dept.easy || []), ...(dept.medium || []), ...(dept.hard || [])];
+  const years = [yearKey, ...YEAR_KEYS.filter((y) => y !== yearKey)];
+  const diffs = [difficulty, ...DIFFICULTIES.filter((d) => d !== difficulty)];
+  for (const y of years) {
+    for (const d of diffs) {
+      const pool = dept[y]?.[d];
+      if (!pool?.length) continue;
+      const raw = deal(`${department}|${y}|${d}`, pool);
+      return { question: normalizeQuestion(raw), difficulty: d, department, yearKey: y };
+    }
   }
-  if (pool.length === 0) return null;
-
-  const usedKey = `${department}:${difficulty}`;
-  if (!deptUsedQuestions.has(usedKey)) deptUsedQuestions.set(usedKey, new Set());
-
-  const used = deptUsedQuestions.get(usedKey);
-  let available = pool.filter((q) => !used.has(q.q));
-  if (available.length === 0) {
-    used.clear();
-    available = pool;
-  }
-
-  const picked = available[Math.floor(Math.random() * available.length)];
-  used.add(picked.q);
-
-  return {
-    question: normalizeQuestion(picked),
-    difficulty,
-    department,
-  };
+  return null;
 }
 
-/** Reset dept used-question and score-trigger tracking for new game */
-export function resetDeptQuizState() {
-  deptUsedQuestions.clear();
-  deptTriggered.clear();
-}
+// ─── Shared ────────────────────────────────────────────────────────────────────────────
 
-/** Normalize JSON question to QuizScene format */
+/**
+ * Convert a stored question into the QuizScene format { q, options, answer: index, type }.
+ * Accepts both schemas: the bank's { question, options, answer: "text" } and the history
+ * file's { q, options, answer: index }. Multiple-choice options are shuffled every time;
+ * True/False keeps the True, False order.
+ */
 function normalizeQuestion(raw) {
   if (!raw) return null;
+  const text = raw.question ?? raw.q;
+  const options = raw.options || [];
+  const correct = typeof raw.answer === 'number' ? options[raw.answer] : raw.answer;
+  const isTrueFalse = raw.type === 'true_false';
+  const shown = isTrueFalse ? options.slice() : shuffle(options);
   return {
-    q: raw.q,
-    options: raw.options,
-    answer: raw.answer,
-    type: raw.type || 'multiple_choice',
-    year: raw.year,
-    event: raw.event,
+    id: raw.id,
+    q: text,
+    options: shown,
+    answer: shown.indexOf(correct),
+    type: isTrueFalse ? 'true_false' : raw.type === 'year_match' ? 'year_match' : 'mcq',
   };
-}
-
-/** Legacy re-export for any code still importing from questions.js */
-export function getDifficultyForProgress(obstacleCount) {
-  return getDifficultyForScore(obstacleCount);
-}
-
-export function getRandomQuestion(category, difficulty = 'easy') {
-  if (category === 'CST') {
-    const entry = cstHistory?.timeline?.[0];
-    return entry ? normalizeQuestion(entry.question) : null;
-  }
-  const result = getDeptQuestion(category, difficulty === 'hard' ? 40 : difficulty === 'medium' ? 20 : 5);
-  return result?.question || null;
 }

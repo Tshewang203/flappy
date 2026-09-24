@@ -500,9 +500,20 @@ export class UIHelper {
       .setShadow(0, 1, '#000', 3, true, true);
   }
 
-  static goToScene(scene, targetScene, data = {}) {
-    if (scene._navigating) return;
+  /**
+   * Block double-taps while leaving a scene. Phaser reuses scene instances, so the flag
+   * must be cleared on shutdown — otherwise the next visit to that scene (e.g. the second
+   * Game Over) starts with every button ignored.
+   */
+  static lockNavigation(scene) {
+    if (scene._navigating) return false;
     scene._navigating = true;
+    scene.events.once('shutdown', () => { scene._navigating = false; });
+    return true;
+  }
+
+  static goToScene(scene, targetScene, data = {}) {
+    if (!UIHelper.lockNavigation(scene)) return;
     AudioManager.resume();
 
     if (!VIDEO_SCENES.includes(targetScene)) {
@@ -515,8 +526,7 @@ export class UIHelper {
   }
 
   static fadeToScene(scene, targetScene, data = {}, duration = 250) {
-    if (scene._navigating) return;
-    scene._navigating = true;
+    if (!UIHelper.lockNavigation(scene)) return;
     AudioManager.resume();
 
     if (VIDEO_SCENES.includes(targetScene)) {

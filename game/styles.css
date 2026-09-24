@@ -133,10 +133,22 @@ body.video-active #game-container canvas {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.75);
-  z-index: 100;
+  z-index: 2147483646;
   display: flex;
   align-items: center;
   justify-content: center;
+  pointer-events: auto;
+  isolation: isolate;
+}
+
+body.avatar-capture-open #game-container,
+body.avatar-capture-open #game-container canvas,
+body.avatar-capture-open .game-overlay-input {
+  pointer-events: none !important;
+}
+
+body.avatar-capture-open .game-overlay-input {
+  visibility: hidden;
 }
 
 .avatar-modal {
@@ -172,14 +184,19 @@ body.video-active #game-container canvas {
   height: 240px;
   border-radius: 50%;
   object-fit: cover;
+  object-position: center;
   border: 3px solid rgba(255, 255, 255, 0.5);
   margin: 0 auto 16px;
   display: block;
   background: #1e3a5f;
+  transform: none;
+  -webkit-transform: none;
 }
 
+/* Live camera shows as a mirror, like a phone selfie camera */
 .avatar-video {
   transform: scaleX(-1);
+  -webkit-transform: scaleX(-1);
 }
 
 .avatar-error {

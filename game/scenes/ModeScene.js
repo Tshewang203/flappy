@@ -33,9 +33,10 @@ export class ModeScene extends Phaser.Scene {
     }
 
     const bests = getBestScores();
-    const modes = [MODES.FLAPPY_CST, MODES.JOURNEY, MODES.DEPARTMENT, MODES.STORY];
-    const startY = 200;
-    const cardGap = 112;
+    // 1. Classic Mode  2. Silver Jubilee Challenge (Story + 25 Years merged)  3. Department Challenge
+    const modes = [MODES.FLAPPY_CST, MODES.JOURNEY, MODES.DEPARTMENT];
+    const startY = 235;
+    const cardGap = 128;
 
     modes.forEach((mode, idx) => {
       this.createModeCard(GAME_WIDTH / 2, startY + idx * cardGap, mode, bests[mode.id] || 0);
