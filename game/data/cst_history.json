@@ -4,7 +4,7 @@
   "timeline": [
     {
       "order": 1,
-      "triggerScore": 5,
+      "triggerScore": 10,
       "year": "2001",
       "title": "CST Founded",
       "description": "The College of Science and Technology is established under the Royal University of Bhutan, beginning its mission to advance science and technology education.",
@@ -19,7 +19,7 @@
     },
     {
       "order": 2,
-      "triggerScore": 15,
+      "triggerScore": 20,
       "year": "2014",
       "title": "Academic Expansion",
       "description": "CST expands its academic programs and strengthens affiliations, adding new engineering disciplines and modern laboratory facilities across campus.",
@@ -34,7 +34,7 @@
     },
     {
       "order": 3,
-      "triggerScore": 25,
+      "triggerScore": 30,
       "year": "2026",
       "title": "Silver Jubilee",
       "description": "CST celebrates 25 years of excellence — honoring its legacy of learning, innovation, and community impact across Bhutan.",

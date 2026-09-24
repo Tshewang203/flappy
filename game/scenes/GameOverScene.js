@@ -21,6 +21,7 @@ export class GameOverScene extends Phaser.Scene {
   }
 
   create() {
+    this._navigating = false;
     UIHelper.setVideoBackground(this);
     UIHelper.createGlassOverlay(this, 0.12);
     UIHelper.fadeIn(this);
@@ -112,7 +113,7 @@ export class GameOverScene extends Phaser.Scene {
 
     // Leaderboard submit status
     if (isFirebaseConfigured() && this.player) {
-      this.add.text(GAME_WIDTH / 2, statsY + 30, 'Submitting to leaderboard...', {
+      const submitStatus = this.add.text(GAME_WIDTH / 2, statsY + 30, 'Submitting to leaderboard...', {
         fontFamily: 'Inter',
         fontSize: '10px',
         color: COLORS.textMuted,
@@ -126,8 +127,15 @@ export class GameOverScene extends Phaser.Scene {
         role: this.player.role,
         score: this.score,
         mode: this.mode,
+      }).then((docId) => {
+        if (!submitStatus?.scene) return;
+        submitStatus.setText(docId ? 'Saved to leaderboard' : 'Could not save score');
+        submitStatus.setColor(docId ? '#2ecc71' : '#e74c3c');
       }).catch((err) => {
         console.error('Leaderboard submission failed:', err);
+        if (!submitStatus?.scene) return;
+        submitStatus.setText('Could not save score');
+        submitStatus.setColor('#e74c3c');
       });
     }
 

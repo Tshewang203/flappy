@@ -82,7 +82,7 @@ export const MODES = {
     subtitle: 'Your Dept, Your Quiz',
     color: 0x3498db,
     iconType: 'target',
-    description: 'Random dept quizzes, scaled difficulty.',
+    description: 'Dept quiz every 10 pts, scaled difficulty.',
     hasQuiz: true,
     quizCategory: 'department',
     leaderboardType: 'department',
@@ -111,17 +111,17 @@ export const STORY_LEVELS = [
   { level: 6, requiredScore: 40, bgKey: 'story6', initialSpeed: 270, maxSpeed: 420, initialGap: 145, minGap: 108, spawnInterval: 1500 },
 ];
 
-// Quiz settings — Journey: fixed score milestones; Dept: random probability (see quizEngine.js)
-export const JOURNEY_QUIZ_SCORES = [5, 10, 15, 20, 25, 30];
+// Quiz settings — Journey: fixed score milestones (10/20/30, see quizEngine.js);
+// Department: a quiz every DEPT_QUIZ_SCORE_INTERVAL points.
 export const QUIZ_BONUS = 3;
 export const QUIZ_PENALTY = -3;
 export const QUIZ_TIMER_SECONDS = 10;
 export const QUIZ_STREAK_BONUS = 5;
 export const QUIZ_STREAK_THRESHOLD = 3;
 
-// Department mode random quiz tuning
-export const DEPT_QUIZ_MIN_OBSTACLES = 8;
-export const DEPT_QUIZ_COOLDOWN = 5;
+// Department mode quiz tuning — triggers every N points once past the minimum score.
+export const DEPT_QUIZ_SCORE_INTERVAL = 10;
+export const DEPT_QUIZ_MIN_SCORE = 10;
 
 // Surprise reward chance (0–1)
 export const SURPRISE_REWARD_CHANCE = 0.04;

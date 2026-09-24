@@ -19,20 +19,22 @@ export class UIScene extends Phaser.Scene {
   create() {
     const modeInfo = Object.values(MODES).find((m) => m.id === this.mode);
 
-    if (modeInfo?.iconType) {
-      UIHelper.drawIcon(this, modeInfo.iconType, 26, 24, 8, COLORS.textMuted, 5);
-    }
-    this.add
+    const modeLabel = this.add
       .text(38, 16, modeInfo?.name || '', {
         fontFamily: 'Orbitron',
         fontSize: '13px',
-        color: COLORS.textMuted,
+        color: COLORS.text,
       })
-      .setScrollFactor(0);
+      .setScrollFactor(0).setDepth(1);
+    this.add.rectangle(modeLabel.x + modeLabel.width / 2 - 14, 24, modeLabel.width + 44, 32, 0x0a1e33, 0.65)
+      .setStrokeStyle(1, COLORS.gold, 0.4).setScrollFactor(0).setDepth(0);
+    if (modeInfo?.iconType) {
+      UIHelper.drawIcon(this, modeInfo.iconType, 26, 24, 8, COLORS.gold, 1);
+    }
 
     if (modeInfo?.hasQuiz) {
       const quizLabel = this.mode === 'journey'
-        ? 'CST @ 5·15·25'
+        ? 'CST @ 10·20·30'
         : `${this.player?.department || 'Dept'} Quiz`;
       const quizIcon = this.mode === 'journey' ? 'pin' : 'target';
       const quizText = this.add
@@ -42,33 +44,44 @@ export class UIScene extends Phaser.Scene {
           color: COLORS.gold,
         })
         .setOrigin(1, 0)
-        .setScrollFactor(0);
-      UIHelper.drawIcon(this, quizIcon, GAME_WIDTH - 16 - quizText.width - 14, 24, 7, COLORS.gold, 5);
+        .setScrollFactor(0).setDepth(1);
+      this.add.rectangle(GAME_WIDTH - 16 - quizText.width / 2 - 12, 24, quizText.width + 40, 32, 0x0a1e33, 0.65)
+        .setStrokeStyle(1, COLORS.gold, 0.4).setScrollFactor(0).setDepth(0);
+      UIHelper.drawIcon(this, quizIcon, GAME_WIDTH - 16 - quizText.width - 14, 24, 7, COLORS.gold, 1);
     }
 
     if (this.mode === 'story') {
       this.levelText = this.add
-        .text(GAME_WIDTH - 16, 16, 'LEVEL 1 / 6', {
+        .text(GAME_WIDTH - 28, 16, 'LEVEL 1 / 6', {
           fontFamily: 'Orbitron',
           fontSize: '13px',
           color: COLORS.gold,
           fontStyle: 'bold',
         })
         .setOrigin(1, 0)
-        .setScrollFactor(0);
+        .setScrollFactor(0).setDepth(1);
+      this.add.rectangle(GAME_WIDTH - 16 - this.levelText.width / 2 - 12, 24, this.levelText.width + 40, 32, 0x0a1e33, 0.65)
+        .setStrokeStyle(1, COLORS.gold, 0.4).setScrollFactor(0).setDepth(0);
     }
+
+    this.scoreBadge = this.add.rectangle(GAME_WIDTH / 2, 80, 110, 64, 0x0a1e33, 0.75)
+      .setStrokeStyle(3, COLORS.gold, 0.9)
+      .setScrollFactor(0)
+      .setDepth(0)
+      .setAlpha(0.3);
 
     this.scoreText = this.add
       .text(GAME_WIDTH / 2, 80, '0', {
         fontFamily: 'Orbitron',
-        fontSize: '48px',
-        color: COLORS.silver,
+        fontSize: '44px',
+        color: COLORS.gold,
         fontStyle: 'bold',
-        stroke: '#0f1f33',
-        strokeThickness: 4,
+        stroke: '#0a1e33',
+        strokeThickness: 3,
       })
       .setOrigin(0.5)
       .setScrollFactor(0)
+      .setDepth(1)
       .setAlpha(0.3);
 
     this.powerUpText = this.add
@@ -86,10 +99,11 @@ export class UIScene extends Phaser.Scene {
       this.currentScore = score;
       this.scoreText.setText(String(score));
       this.scoreText.setAlpha(1);
+      this.scoreBadge.setAlpha(1);
       this.tweens.add({
-        targets: this.scoreText,
-        scaleX: { from: 1.2, to: 1 },
-        scaleY: { from: 1.2, to: 1 },
+        targets: [this.scoreText, this.scoreBadge],
+        scaleX: { from: 1.15, to: 1 },
+        scaleY: { from: 1.15, to: 1 },
         duration: 150,
       });
     };
@@ -136,6 +150,7 @@ export class UIScene extends Phaser.Scene {
     };
     this._onGameStarted = () => {
       this.scoreText.setAlpha(1);
+      this.scoreBadge.setAlpha(1);
     };
     this._onStoryLevelChange = (level) => {
       this.storyLevel = level;

@@ -49,32 +49,6 @@ export class BootScene extends Phaser.Scene {
     this.createBackgroundTextures();
     this.createUITextures();
     this.createParticleTexture();
-    this.createAvatarTextures();
-  }
-
-  createAvatarTextures() {
-    const styles = [
-      { key: 'avatar_lecturer', color: 0x0067b1 },
-      { key: 'avatar_hacker', color: 0x2ecc71 },
-    ];
-    styles.forEach(({ key, color }) => {
-      const g = this.make.graphics({ x: 0, y: 0, add: false });
-      g.fillStyle(color, 1);
-      g.fillCircle(24, 24, 22);
-      g.lineStyle(2, 0xffd700, 0.8);
-      g.strokeCircle(24, 24, 22);
-
-      // Simple person silhouette glyph
-      g.fillStyle(0xffffff, 0.9);
-      g.fillCircle(24, 17, 7);
-      g.beginPath();
-      g.arc(24, 40, 14, Phaser.Math.DegToRad(180), Phaser.Math.DegToRad(360), true);
-      g.closePath();
-      g.fillPath();
-
-      g.generateTexture(key, 48, 48);
-      g.destroy();
-    });
   }
 
   createWingTexture() {
@@ -153,55 +127,34 @@ export class BootScene extends Phaser.Scene {
     this.createPipeCapTexture();
   }
 
+  /**
+   * A short, tileable column segment (no baked-in cap or absolute gradient) so pipes of any
+   * height stay crisp — Phaser tiles this via TileSprite instead of stretching one fixed-size
+   * texture, which used to squash the bevel/band details into a flat blur on short/tall pipes.
+   */
   createPipeTexture(key, mainColor, darkColor, accentColor) {
     const g = this.make.graphics({ x: 0, y: 0, add: false });
     const w = 88;
-    const h = 400;
-    const capH = 36;
+    const h = 56; // one repeatable "brick band" unit
 
-    // Main column body — vertical gradient bands
-    for (let y = capH; y < h; y += 1) {
-      const t = (y - capH) / (h - capH);
-      const r = Phaser.Display.Color.Interpolate.ColorWithColor(
-        Phaser.Display.Color.ValueToColor(mainColor),
-        Phaser.Display.Color.ValueToColor(darkColor),
-        100,
-        Math.floor(t * 40)
-      );
-      g.fillStyle(Phaser.Display.Color.GetColor(r.r, r.g, r.b), 1);
-      g.fillRect(6, y, w - 12, 1);
-    }
+    g.fillStyle(mainColor, 1);
+    g.fillRect(0, 0, w, h);
 
-    // Left highlight (3D depth)
+    // Left highlight / right shadow for cylindrical depth
     g.fillStyle(0xffffff, 0.18);
-    g.fillRect(8, capH, 8, h - capH);
-    // Right shadow
+    g.fillRect(6, 0, 8, h);
     g.fillStyle(0x000000, 0.22);
-    g.fillRect(w - 16, capH, 8, h - capH);
+    g.fillRect(w - 14, 0, 8, h);
 
-    // Horizontal brick / book bands
-    for (let y = capH + 18; y < h; y += 28) {
-      g.lineStyle(1, 0x000000, 0.12);
-      g.lineBetween(6, y, w - 6, y);
-      g.fillStyle(accentColor, 0.08);
-      g.fillRect(6, y, w - 12, 3);
-    }
+    // Horizontal band seam
+    g.lineStyle(1, 0x000000, 0.15);
+    g.lineBetween(4, h - 1, w - 4, h - 1);
+    g.fillStyle(accentColor, 0.1);
+    g.fillRect(4, 4, w - 8, 3);
 
     // Outer edge bevel
     g.lineStyle(2, accentColor, 0.45);
-    g.strokeRect(5, capH, w - 10, h - capH - 2);
-    g.lineStyle(1, 0xffffff, 0.15);
-    g.lineBetween(7, capH, 7, h - 4);
-
-    // Decorative cap at gap end (top of texture)
-    g.fillStyle(darkColor, 1);
-    g.fillRoundedRect(0, 0, w, capH, 6);
-    g.fillStyle(mainColor, 1);
-    g.fillRoundedRect(3, 4, w - 6, capH - 8, 4);
-    g.fillStyle(accentColor, 0.85);
-    g.fillRect(3, capH - 10, w - 6, 6);
-    g.lineStyle(2, 0xffffff, 0.25);
-    g.lineBetween(6, 8, w - 6, 8);
+    g.strokeRect(3, 0, w - 6, h);
 
     g.generateTexture(key, w, h);
     g.destroy();
