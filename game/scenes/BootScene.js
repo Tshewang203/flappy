@@ -289,7 +289,7 @@ export class BootScene extends Phaser.Scene {
    * Each one is layered so parts can animate independently (see GameScene.spawnPowerUp):
    *   pu_aura (tinted glow) → pu_badge_<visual> (glossy coin) → pu_icon_<visual> → pu_gloss
    * All drawn at 128px for crisp edges and displayed at ~60px. Visuals: rabbit, snail, star,
-   * shield (+ wifi for Department's WiFi Boost), colours in POWER_UP_VISUALS.
+   * shield, colours in POWER_UP_VISUALS.
    */
   createCollectibleTextures() {
     const S = 128;
@@ -513,22 +513,6 @@ export class BootScene extends Phaser.Scene {
       ctx.lineWidth = 3;
       ctx.stroke();
       ellipse(ctx, 46, 42, 7, 4, -0.7, 'rgba(255,255,255,0.7)');
-    });
-
-    // ── WiFi (Department's WiFi Boost): signal arcs ──
-    this.createCanvasTexture('pu_icon_wifi', S, S, (ctx) => {
-      ctx.lineCap = 'round';
-      [[40, 0], [27, 1], [14, 2]].forEach(([r]) => {
-        ctx.beginPath();
-        ctx.arc(C, 86, r, Math.PI * 1.22, Math.PI * 1.78);
-        ctx.strokeStyle = INK;
-        ctx.lineWidth = 14;
-        ctx.stroke();
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 7;
-        ctx.stroke();
-      });
-      ellipse(ctx, C, 88, 7.5, 7.5, 0, '#ffffff', INK, 4);
     });
 
     // Active shield bubble around the bird

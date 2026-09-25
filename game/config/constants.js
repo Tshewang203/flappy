@@ -199,14 +199,13 @@ export const POWER_UP_VISUALS = {
   snail: { rim: ['#b8f7ec', '#12806f'], disc: ['#6be6d0', '#159683'], color: 0x3fd6bf },
   star: { rim: ['#e0d0ff', '#4b24a8'], disc: ['#a883ff', '#5227b8'], color: 0xffd23f },
   shield: { rim: ['#cfeaff', '#1a55a8'], disc: ['#6bb8ff', '#1e5cb4'], color: 0x58b4ff },
-  wifi: { rim: ['#c8f8d4', '#15793d'], disc: ['#66e08d', '#18904a'], color: 0x4fe07f },
 };
 /** On-screen size of a power-up collectible (px) */
 export const POWER_UP_DISPLAY_SIZE = 60;
 
 /**
  * Silver Jubilee Challenge power-ups. snail/star/shield reuse the existing slow-motion /
- * 2× score / shield effects; rabbit is a brief speed boost (replaces WiFi Boost in this mode).
+ * 2× score / shield effects; rabbit is a brief speed boost.
  */
 export const JUBILEE_POWER_UPS = {
   rabbit: { visual: 'rabbit', label: 'Speed Boost', duration: 3000 },
@@ -222,7 +221,6 @@ export const POWER_UPS = {
   coffee: { iconType: 'coffee', visual: 'snail', duration: 3000, label: 'Slow Motion' },
   shield: { iconType: 'shield', visual: 'shield', duration: 0, label: 'Shield' },
   double: { iconType: 'star', visual: 'star', duration: 5000, label: '2x Score' },
-  wifi: { iconType: 'signal', visual: 'wifi', duration: 0, label: 'WiFi Boost' },
 };
 
 // Physics
@@ -236,12 +234,14 @@ export const AVATAR_SIZE = 128;
 // Asset paths (add your files to these locations)
 export const ASSETS = {
   logo: 'assets/images/cst-logo.png',
+  /** Classic Mode scenery (texture key: classic_bg) */
+  classic: 'assets/images/classic-bg.jpg',
   campus: [
-    'assets/images/campus1.png',
-    'assets/images/campus2.png',
-    'assets/images/campus3.png',
-    'assets/images/campus4.png',
-    'assets/images/campus5.png',
+    'assets/images/campus1.jpg',
+    'assets/images/campus2.jpg',
+    'assets/images/campus3.jpg',
+    'assets/images/campus4.jpg',
+    'assets/images/campus5.jpg',
   ],
   story: [
     'assets/images/story1.jpeg',

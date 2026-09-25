@@ -37,7 +37,7 @@ const MAX_GAP_SHIFT = 280;
 import { CAMPUS_LOCATIONS } from '../data/legacy.js';
 import { getPlayer, getAvatar } from '../utils/storage.js';
 import { buildFaceTexture } from '../utils/avatar.js';
-import { loadOptionalImages } from '../utils/assets.js';
+import { loadOptionalImages, areImagesSettled, whenImagesSettled } from '../utils/assets.js';
 import { UIHelper } from '../utils/UIHelper.js';
 import { AudioManager } from '../utils/audio.js';
 import {
@@ -117,6 +117,26 @@ export class GameScene extends Phaser.Scene {
   }
 
   create() {
+    // Silver Jubilee (every stage) and Classic (its one scenery): the images must be loaded before
+    // play starts. Otherwise, on a slow connection, the game opens on the fallback night sky.
+    this.waitingForScenery = false;
+    const sceneryKeys = this.isJubilee
+      ? STORY_LEVELS.map((level) => level.bgKey)
+      : this.modeInfo?.classic ? ['classic_bg'] : [];
+    if (sceneryKeys.length) {
+      loadOptionalImages(this);
+      if (!areImagesSettled(sceneryKeys)) {
+        this.waitingForScenery = true;
+        this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'Loading...', {
+          fontFamily: 'Orbitron', fontSize: '18px', color: COLORS.silver,
+        }).setOrigin(0.5);
+        whenImagesSettled(sceneryKeys).then(() => {
+          if (this.sys.isActive()) this.scene.restart({ mode: this.mode });
+        });
+        return;
+      }
+    }
+
     this.physics.resume();
     this.scene.resume();
 
@@ -128,7 +148,9 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.fadeIn(300);
     loadOptionalImages(this);
 
-    const initialBg = this.isJubilee ? this.getStoryBackgroundKey() : this.getBackgroundKey(0);
+    const initialBg = this.isJubilee
+      ? this.getStoryBackgroundKey()
+      : this.modeInfo?.classic && this.textures.exists('classic_bg') ? 'classic_bg' : this.getBackgroundKey(0);
     this.bg = this.add.image(GAME_WIDTH / 2, GAME_HEIGHT / 2, initialBg).setDepth(-2);
     this.fitBackground();
 
@@ -300,11 +322,7 @@ export class GameScene extends Phaser.Scene {
         }
       })
       .catch(() => {
-        this.textures.addBase64(faceKey, avatar);
-        if (this.bird?.scene) {
-          this.bird.setTexture(faceKey);
-          this.bird.setDisplaySize(PLAYER_DISPLAY_SIZE, PLAYER_DISPLAY_SIZE);
-        }
+        // Photo couldn't be decoded — keep the default placeholder rather than a missing texture
       });
 
   }
@@ -515,7 +533,7 @@ export class GameScene extends Phaser.Scene {
     return (this.getWallLevel() - 1) % WALL_PALETTES.length;
   }
 
-  /** On level up, repaint walls the bird hasn't reached yet and announce the level. */
+  /** On level up, quietly repaint walls the bird hasn't reached yet (no on-screen announcement). */
   checkWallLevel() {
     const level = this.getWallLevel();
     if (level === this.wallLevel) return;
@@ -527,21 +545,6 @@ export class GameScene extends Phaser.Scene {
       pipe.setTexture(`wall_body_${idx}`);
       pipe.getData('cap')?.setTexture(`wall_cap_${idx}`);
     });
-
-    if (this.isJubilee) return; // stage changes are announced by the HUD
-    const toast = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 120, `LEVEL ${this.getWallLevel()}`, {
-      fontFamily: 'Orbitron', fontSize: '34px', color: WALL_PALETTES[idx].light,
-      stroke: WALL_PALETTES[idx].outline, strokeThickness: 6,
-    }).setOrigin(0.5).setDepth(25).setAlpha(0);
-    this.tweens.add({
-      targets: toast,
-      alpha: { from: 0, to: 1 },
-      y: toast.y - 20,
-      duration: 300,
-      yoyo: true,
-      hold: 700,
-      onComplete: () => toast.destroy(),
-    });
   }
 
   syncPhysicsBody(obj) {
@@ -551,6 +554,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   update(time, delta) {
+    if (this.waitingForScenery) return;
     if (this.stageTransitioning) {
       // Gameplay is frozen between stages, but keep the bird's wings, shield and the ground
       // moving so the transition feels continuous rather than stopped.
@@ -957,8 +961,6 @@ export class GameScene extends Phaser.Scene {
         loop({ targets: icon, scale: iconScale * 1.07, duration: 650 });
         loop({ targets: aura, alpha: 1, scale: auraScale * 1.22, duration: 650 });
         break;
-      default: // wifi
-        loop({ targets: icon, alpha: 0.75, scale: iconScale * 1.05, duration: 600 });
     }
   }
 
@@ -1014,27 +1016,6 @@ export class GameScene extends Phaser.Scene {
         this.scoreMultiplier = 2;
         this.time.delayedCall(cfg.duration, () => { this.scoreMultiplier = 1; });
         break;
-      case 'wifi':
-        this.pipes.getChildren().forEach((pipe) => {
-          if (pipe.x > this.bird.x - 50 && pipe.x < this.bird.x + 300) {
-            const cap = pipe.getData('cap');
-            this.tweens.add({
-              targets: pipe,
-              alpha: 0,
-              scaleX: 0,
-              duration: 200,
-              onComplete: () => {
-                cap?.destroy();
-                pipe.destroy();
-              },
-            });
-            if (cap) {
-              this.tweens.add({ targets: cap, alpha: 0, scaleX: 0, duration: 200 });
-            }
-          }
-        });
-        this.cameras.main.flash(200, 46, 204, 113, false);
-        break;
     }
   }
 
@@ -1083,7 +1064,7 @@ export class GameScene extends Phaser.Scene {
         }, 8);
         burst('pu_sparkle', { speed: { min: 60, max: 180 }, lifespan: 380, scale: { start: 0.55, end: 0 }, tint: 0xfff1a8 }, 8);
         break;
-      default: // shield / wifi: bright sparkles in the power-up colour
+      default: // shield: bright sparkles in the power-up colour
         burst('pu_sparkle', {
           speed: { min: 100, max: 240 }, lifespan: 400, scale: { start: 0.6, end: 0 }, tint: [0xffffff, v.color],
         }, 12);

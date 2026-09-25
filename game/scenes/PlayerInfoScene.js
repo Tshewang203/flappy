@@ -231,10 +231,9 @@ export class PlayerInfoScene extends Phaser.Scene {
         .setDisplaySize(56, 56)
         .setDepth(2);
     } catch {
-      this.textures.addBase64(key, data);
-      this.avatarImage = this.add.image(GAME_WIDTH / 2, y, key)
-        .setDisplaySize(56, 56)
-        .setDepth(2);
+      // Photo couldn't be decoded — show the default placeholder rather than a missing texture
+      this.avatarImage = null;
+      this.avatarPlaceholder = UIHelper.drawIcon(this, 'student', GAME_WIDTH / 2, y, 16, COLORS.silver, 1);
     }
   }
 

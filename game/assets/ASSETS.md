@@ -5,11 +5,11 @@
 | File | Purpose |
 |------|---------|
 | `images/cst-logo.png` | CST logo |
-| `images/campus1.png` | CST Main Entrance |
-| `images/campus2.png` | Academic Block |
-| `images/campus3.png` | Engineering Labs |
-| `images/campus4.png` | Innovation Center |
-| `images/campus5.png` | Silver Jubilee Plaza |
+| `images/campus1.jpg` | CST Main Entrance |
+| `images/campus2.jpg` | Academic Block |
+| `images/campus3.jpg` | Engineering Labs |
+| `images/campus4.jpg` | Innovation Center |
+| `images/campus5.jpg` | Silver Jubilee Plaza |
 
 ## Video
 

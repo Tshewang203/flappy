@@ -84,14 +84,28 @@ export class MenuScene extends Phaser.Scene {
         fontFamily: 'Inter', fontSize: '13px', color: 'rgba(255,255,255,0.9)',
       }).setOrigin(0.5).setDepth(10).setShadow(0, 1, '#000', 3, true, true);
 
+      const avatarX = GAME_WIDTH / 2 - 160;
+      const drawDefaultIcon = () => UIHelper.drawIcon(this, player.role === 'lecturer' ? 'lecturer' : 'student', avatarX, 555, 12, COLORS.gold, 10);
       const avatar = getAvatar();
       if (avatar) {
+        // Decode the saved photo before using it: textures.addBase64 is asynchronous, so adding the
+        // image straight away rendered Phaser's black "missing texture" square instead.
         const key = 'menu_avatar';
-        if (this.textures.exists(key)) this.textures.remove(key);
-        this.textures.addBase64(key, avatar);
-        this.add.image(GAME_WIDTH / 2 - 160, 555, key).setDisplaySize(28, 28).setDepth(10);
+        const token = {};
+        this.avatarLoadToken = token;
+        const img = new Image();
+        img.onload = () => {
+          if (this.avatarLoadToken !== token || !this.sys.isActive()) return;
+          if (this.textures.exists(key)) this.textures.remove(key);
+          this.textures.addImage(key, img);
+          this.add.image(avatarX, 555, key).setDisplaySize(28, 28).setDepth(10);
+        };
+        img.onerror = () => {
+          if (this.avatarLoadToken === token && this.sys.isActive()) drawDefaultIcon();
+        };
+        img.src = avatar;
       } else {
-        UIHelper.drawIcon(this, player.role === 'lecturer' ? 'lecturer' : 'student', GAME_WIDTH / 2 - 160, 555, 12, COLORS.gold, 10);
+        drawDefaultIcon();
       }
 
       UIHelper.createButton(this, GAME_WIDTH / 2, 600, 'Change Player', () => {

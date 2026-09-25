@@ -376,12 +376,6 @@ export class UIHelper {
         g.fillPath();
         break;
       }
-      case 'signal': {
-        g.fillRect(-size * 0.55, size * 0.25, size * 0.25, size * 0.3);
-        g.fillRect(-size * 0.15, -size * 0.05, size * 0.25, size * 0.6);
-        g.fillRect(size * 0.25, -size * 0.4, size * 0.25, size * 0.95);
-        break;
-      }
       case 'coffee': {
         g.strokeRoundedRect(-size * 0.5, -size * 0.35, size * 0.85, size * 0.75, size * 0.1);
         g.beginPath();
