@@ -121,12 +121,12 @@ export const MODES = {
  * be passed to move on; quizAt lists extra mid-stage quizzes (6 checkpoints + 4 mid-stage = 10).
  */
 export const STORY_LEVELS = [
-  { level: 1, requiredScore: 5, bgKey: 'story1', initialSpeed: 155, maxSpeed: 220, initialGap: 220, minGap: 170, spawnInterval: 1600, pipeSpacing: 500 },
-  { level: 2, requiredScore: 5, bgKey: 'story2', initialSpeed: 175, maxSpeed: 255, initialGap: 205, minGap: 155, spawnInterval: 1500, pipeSpacing: 480 },
-  { level: 3, requiredScore: 8, quizAt: [4], bgKey: 'story3', initialSpeed: 195, maxSpeed: 290, initialGap: 190, minGap: 140, spawnInterval: 1400, pipeSpacing: 465 },
-  { level: 4, requiredScore: 8, quizAt: [4], bgKey: 'story4', initialSpeed: 215, maxSpeed: 330, initialGap: 175, minGap: 128, spawnInterval: 1300, pipeSpacing: 450 },
-  { level: 5, requiredScore: 15, quizAt: [8], bgKey: 'story5', initialSpeed: 240, maxSpeed: 370, initialGap: 160, minGap: 118, spawnInterval: 1200, pipeSpacing: 435 },
-  { level: 6, requiredScore: 40, quizAt: [20], bgKey: 'story6', initialSpeed: 270, maxSpeed: 420, initialGap: 145, minGap: 108, spawnInterval: 1100, pipeSpacing: 420 },
+  { level: 1, requiredScore: 10, bgKey: 'story1', initialSpeed: 155, maxSpeed: 220, initialGap: 220, minGap: 170, spawnInterval: 1600, pipeSpacing: 500 },
+  { level: 2, requiredScore: 15, bgKey: 'story2', initialSpeed: 175, maxSpeed: 255, initialGap: 205, minGap: 155, spawnInterval: 1500, pipeSpacing: 480 },
+  { level: 3, requiredScore: 20, quizAt: [4], bgKey: 'story3', initialSpeed: 195, maxSpeed: 290, initialGap: 190, minGap: 140, spawnInterval: 1400, pipeSpacing: 465 },
+  { level: 4, requiredScore: 23, quizAt: [4], bgKey: 'story4', initialSpeed: 215, maxSpeed: 330, initialGap: 175, minGap: 128, spawnInterval: 1300, pipeSpacing: 450 },
+  { level: 5, requiredScore: 30, quizAt: [8], bgKey: 'story5', initialSpeed: 240, maxSpeed: 370, initialGap: 160, minGap: 118, spawnInterval: 1200, pipeSpacing: 435 },
+  { level: 6, requiredScore: 44, quizAt: [20], bgKey: 'story6', initialSpeed: 270, maxSpeed: 420, initialGap: 145, minGap: 108, spawnInterval: 1100, pipeSpacing: 420 },
 ];
 
 // Quiz settings — Jubilee: stage checkpoints + mid-stage quizzes; Department: progress-based
